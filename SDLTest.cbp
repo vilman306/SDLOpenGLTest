@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="SDLTest" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/SDLTest" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+					<Add directory="include" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/SDLTest" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add directory="include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add directory="src" />
+			<Add directory="../Engine/external/glad/include" />
+		</Compiler>
+		<Linker>
+			<Add library="../Engine/external/SDL-release-3.4.12/build/libSDL3.a" />
+		</Linker>
+		<UnitsGlob directory="include" wildcard="" recursive="0" id="316380917" addToProject="1" />
+		<UnitsGlob directory="src" wildcard="" recursive="1" id="2161621352" addToProject="1">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</UnitsGlob>
+		<Unit filename="../Engine/external/glad/src/gl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="include/Config.h">
+			<Option glob="316380917" />
+		</Unit>
+		<Unit filename="include/Game.hpp">
+			<Option glob="316380917" />
+		</Unit>
+		<Unit filename="include/Scene.hpp">
+			<Option glob="316380917" />
+		</Unit>
+		<Unit filename="include/Sprite.hpp">
+			<Option glob="316380917" />
+		</Unit>
+		<Unit filename="main.cpp" />
+		<Unit filename="src/Game.cpp">
+			<Option glob="2161621352" />
+		</Unit>
+		<Unit filename="src/Scene.cpp">
+			<Option glob="2161621352" />
+		</Unit>
+		<Unit filename="src/Sprite.cpp">
+			<Option glob="2161621352" />
+		</Unit>
+		<Unit filename="src/oldmain.cpp">
+			<Option glob="2161621352" />
+		</Unit>
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>
