@@ -6,12 +6,12 @@
 #include "Transform.hpp"
 #include <glad/gl.h>
 
-struct TextureDestroyer
-{
-    void operator()(SDL_Texture* texture){
-        SDL_DestroyTexture(texture);
-    }
-};
+//struct TextureDestroyer
+//{
+//    void operator()(SDL_Texture* texture){
+//        SDL_DestroyTexture(texture);
+//    }
+//};
 
 class Sprite
 {
@@ -21,9 +21,11 @@ class Sprite
 
 //        void Draw(SDL_Renderer* renderer);
 
-        void LoadTexture(const std::string& filePath, SDL_Renderer* renderer); // Loads image (png) to GPU
+        GLuint m_Texture = 0; // 0 means no texture
 
-        SDL_Texture* GetTexture() { return m_Texture.get(); }
+        void LoadTexture(const std::string& filePath); // Loads image (png) to GPU
+
+//        SDL_Texture* GetTexture() { return m_Texture.get(); }
 
 //        void UpdateVBO();
 
@@ -74,7 +76,7 @@ class Sprite
     private:
         Transform m_Transform; // Describes how to transform this Sprite's vertices from local space to world space
         glm::mat4 modelMatrix = m_Transform.ToModelMatrix();
-        std::unique_ptr<SDL_Texture, TextureDestroyer> m_Texture;
+//        std::unique_ptr<SDL_Texture, TextureDestroyer> m_Texture;
 };
 
 #endif // SPRITE_HPP

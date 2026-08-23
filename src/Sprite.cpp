@@ -7,6 +7,7 @@ Sprite::Sprite()
 {
     nrOfSprites++;
 
+
     // Change transform scale to match width and height
 
     // local axes
@@ -111,22 +112,61 @@ void Sprite::InitializeOpenGL()
 //    SDL_RenderTexture(renderer, m_Texture.get(), nullptr, &destinationRect);
 //}
 
-void Sprite::LoadTexture(const std::string& filePath, SDL_Renderer* renderer)
+GLenum GetColorFormat(int nrOfColorChannels)
+{
+    switch (nrOfColorChannels)
+    {
+        case 3: return GL_RGB;
+        case 4: return GL_RGBA;
+        default: throw std::runtime_error(std::string("Function nrOfColorChannelsToEnum has not defined a case for nrOfColorChannels == "
+                                        + std::to_string(nrOfColorChannels) + "."));
+    }
+}
+
+#include <stb_image.h>
+
+void Sprite::LoadTexture(const std::string& filePath)
 {
     std::string fullPath = std::string(SDL_GetBasePath()) + "/textures/" + filePath;
-    SDL_Surface* surface = SDL_LoadPNG(fullPath.c_str());
-    if (!surface) {
-        std::cout << "ERROR: failed to create surface from '" << fullPath << "'." << std::endl;
-        return;
-    }
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    if (!texture) {
-        std::cout << "ERROR: failde to create texture from surface (of '" << fullPath << "')." << std::endl;
-        return;
-    }
-    m_Texture.reset(texture);
-    width = surface->w;
-    height = surface->h;
+//    SDL_Surface* surface = SDL_LoadPNG(fullPath.c_str());
+//    if (!surface) {
+//        std::cout << "ERROR: failed to create surface from '" << fullPath << "'." << std::endl;
+//        return;
+//    }
+//    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+//    if (!texture) {
+//        std::cout << "ERROR: failde to create texture from surface (of '" << fullPath << "')." << std::endl;
+//        return;
+//    }
+//    m_Texture.reset(texture);
+//    width = surface->w;
+//    height = surface->h;
+//
+//    SDL_DestroySurface(surface);
 
-    SDL_DestroySurface(surface);
+    // Load texture data from path
+    int nrOfColorChannels;
+    unsigned char* data = stbi_load(fullPath.c_str(), &width, &height, &nrOfColorChannels, 0);
+    if (!data)
+        throw std::runtime_error("Failed to load texture data from '" + fullPath + "'.");
+
+    // (create and) bind texture
+    if (m_Texture == 0)
+        glGenTextures(1, &m_Texture);
+    glBindTexture(GL_TEXTURE_2D, m_Texture);
+
+    // set texture wrapping and filtering options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = {0.7f, 0.0f, 0.3f, 1.0f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    GLenum colorFormat = GetColorFormat(nrOfColorChannels);
+    glTexImage2D(GL_TEXTURE_2D, 0, colorFormat, width, height, 0, colorFormat, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(data);
+
 }
