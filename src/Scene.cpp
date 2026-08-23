@@ -80,11 +80,16 @@ Scene::Scene()
     }
 }
 
-Scene::~Scene()
-{
-    //dtor
-}
 
+std::string ShaderTypeToString(GLenum type)
+{
+    switch (type)
+    {
+        case GL_VERTEX_SHADER: return "GL_VERTEX_SHADER";
+        case GL_FRAGMENT_SHADER: return "GL_FRAGMENT_SHADER";
+        default: return "shader type not defined in function ShaderTypeToString(GLenum type)";
+    }
+}
 
 #include <fstream>
 #include <sstream>
@@ -102,8 +107,9 @@ std::string LoadShaderSource(const std::string& filePath)
 GLuint CreateShader(GLenum shaderType, const std::string& sourcePath)
 {
     GLuint shader = glCreateShader(shaderType);
-    const GLchar* vertexSource = LoadShaderSource("default.vert").c_str();
-    glShaderSource(shader, 1, &vertexSource, nullptr);
+    std::string sourceString = LoadShaderSource(sourcePath);
+    const GLchar* source = sourceString.c_str();
+    glShaderSource(shader, 1, &source, nullptr);
     glCompileShader(shader);
     // Check for compilation errors
     GLint success;
@@ -111,7 +117,7 @@ GLuint CreateShader(GLenum shaderType, const std::string& sourcePath)
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        throw std::runtime_error(std::string("Failed to compile vertex shader: ") + infoLog);
+        throw std::runtime_error(std::string("Failed to compile shader of type ") + ShaderTypeToString(shaderType) + " :" + infoLog);
     }
     return shader;
 }
@@ -130,65 +136,86 @@ GLuint CreateShaderProgram(GLuint vertexShader, GLuint fragmentShader)
         glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
         throw std::runtime_error(std::string("Failed to link shader program: ") + infoLog);
     }
+    return shaderProgram;
 }
 
-GLuint VBO;
+
 glm::mat4 viewMatrix(1.0f);
 glm::mat4 projectionMatrix(1.0f);
+GLuint shaderProgram;
+GLint modelMatrixLocation;
+GLint viewMatrixLocation;
+GLint projectionMatrixLocation;
 
+#include <SDL3/SDL_filesystem.h>
+#include <glm/gtc/type_ptr.hpp>
 void SetupOpenGL()
 {
     glClearColor(0.25f, 0.25f, 0.4f, 1.0f); // Set background color
 
-    glGenBuffers(1, &VBO); // Create vertex buffer object (for sprites)
-
     // Create shaders
-    GLuint vertexShader = CreateShader(GL_VERTEX_SHADER, "default.vert");
-    GLuint fragmentShader = CreateShader(GL_FRAGMENT_SHADER, "default.frag");
+
+    GLuint vertexShader = CreateShader(GL_VERTEX_SHADER, std::string(SDL_GetBasePath()) + "../../src/default.vert");
+    GLuint fragmentShader = CreateShader(GL_FRAGMENT_SHADER, std::string(SDL_GetBasePath()) + "../../src/default.frag");
 
     // Create and activate shader program
-    GLuint shaderProgram = CreateShaderProgram(vertexShader, fragmentShader);
+    shaderProgram = CreateShaderProgram(vertexShader, fragmentShader);
     glUseProgram(shaderProgram);
 
     // Delete shaders now that they're linked in the shader program
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    // Create matrices
-    viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0f, 0.0f, -3.0f)); // For "camera"
+
+
+    // Matrices
+    viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0f, 0.0f, -3.0f)); // Create vuiew matrix (for "camera")
+    if ((viewMatrixLocation = glGetUniformLocation(shaderProgram, "view")) == -1) // Get location
+        throw std::runtime_error("Failed to get view matrix location in shader program.");
+    glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix)); // Send it to shader program uniform (do it here, once, since will never change)
+
+
     projectionMatrix = glm::perspective(glm::radians(45.0f), static_cast<float>(Config::WindowWidth) / Config::WindowHeight, 0.1f, 100.0f); // For clipping and depth
+    if ((projectionMatrixLocation = glGetUniformLocation(shaderProgram, "projection")) == -1)
+        throw std::runtime_error("Failed to get projection matrix location in shader program.");
+    glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
-    GLint modelMatrixLocation = glGetUniformLocation()
+    if ((modelMatrixLocation = glGetUniformLocation(shaderProgram, "model")) == -1)
+        throw std::runtime_error("Failed to get model matrix location in shader program.");
 }
 
-Sprite sprite1(VBO);
-Sprite sprite2(VBO);
-Sprite sprite3(VBO);
 
-void SetupSprites()
+
+void Scene::SetupSprites()
 {
-    sprite1.m_Transform.Position = {40.0f, 40.0f, -2.0f};
-    sprite2.m_Transform.Position = {120.0f, 120.0f, -1.0f};
-    sprite3.m_Transform.Position = {80.0f, 80.0f, 0.0f};
-
-    sprite1.UpdateVBO();
-    sprite2.UpdateVBO();
-    sprite3.UpdateVBO();
+    Sprite::InitializeOpenGL();
+    sprite1.UploadVerticesToVBO();
+    sprite2.UploadVerticesToVBO();
+    sprite3.UploadVerticesToVBO();
+    sprite1.SetPosition(glm::vec3(40.0f, 40.0f, -2.0f));
+    sprite2.SetPosition(glm::vec3(120.0f, 120.0f, -1.0f));
+    sprite3.SetPosition(glm::vec3(80.0f, 80.0f, 0.0f));
 }
 
-
-
-
-void PrepareToDrawSprite(Sprite& p_Sprite)
+void Scene::DrawSprites()
 {
+    glUseProgram(shaderProgram);
+    glBindVertexArray(Sprite::VAO);
+
+    int nrOfVertices = 6;
+
+    // Send model matrix to vertex shader (as uniform)
+    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite1.modelMatrix));
+                            // correct?
+    glDrawArrays(GL_TRIANGLES, 0, nrOfVertices);
+
+    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite2.modelMatrix));
+    glDrawArrays(GL_TRIANGLES, 1 * nrOfVertices, nrOfVertices);
+
+    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite3.modelMatrix));
+    glDrawArrays(GL_TRIANGLES, 2 * nrOfVertices, nrOfVertices);
 
 }
-
-void DrawSprite(Sprite& p_Sprite)
-{
-    // Render everythin in VBO
-}
-
 
 
 void Scene::Update(double deltaTime)
@@ -203,16 +230,11 @@ void Scene::Update(double deltaTime)
 
         glClear(GL_COLOR_BUFFER_BIT);
 
+
+        DrawSprites();
+
         SDL_GL_SwapWindow(m_Window.get());
-//
-//        DrawSprite(sprite1);
-//        DrawSprite(sprite2);
-//        DrawSprite(sprite3);
 
-//        sprite.Draw(m_Renderer.get());
-
-        // Draw to screen
-//        SDL_RenderPresent(m_Renderer.get());
     }
     catch (const std::exception& e)
     {
@@ -228,4 +250,12 @@ void Scene::ProcessInput(SDL_Event* event)
     {
         glViewport(0, 0, event->window.data1, event->window.data2);
     }
+}
+
+
+Scene::~Scene()
+{
+    glDeleteVertexArrays(1, &Sprite::VAO);
+    glDeleteBuffers(1, &Sprite::VBO);
+    glDeleteProgram(shaderProgram);
 }

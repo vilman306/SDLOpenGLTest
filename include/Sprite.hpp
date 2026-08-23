@@ -16,7 +16,7 @@ struct TextureDestroyer
 class Sprite
 {
     public:
-        Sprite(GLuint p_VBO);
+        Sprite();
         virtual ~Sprite();
 
 //        void Draw(SDL_Renderer* renderer);
@@ -25,21 +25,25 @@ class Sprite
 
         SDL_Texture* GetTexture() { return m_Texture.get(); }
 
-        void UpdateVBO();
+//        void UpdateVBO();
 
         float position_x = 20;
         float position_y = 30;
-        int width = 0;
-        int height = 0;
+        int width = 100;
+        int height = 100;
 
-        Transform m_Transform; // Describes how to transform this Sprite's vertices from local space to world space
         Transform GetTransform() {return m_Transform;}
-        void SetTransform(Transform p_Transform) {m_Transform = p_Transform; modelMatrix = m_Transform.ToModelMatrix();}
+        void SetTransform(Transform p_Transform) {m_Transform = p_Transform; UpdateModelMatrix();}
+        void SetPosition(glm::vec3 position) {m_Transform.Position = position; UpdateModelMatrix();}
 
         glm::mat4 modelMatrix = m_Transform.ToModelMatrix();
+        void UpdateModelMatrix() {modelMatrix = m_Transform.ToModelMatrix();}
 
-
-        GLuint VBO;
+        static void InitializeOpenGL(); // Creates the
+        void UploadVerticesToVBO();
+        inline static GLuint VBO; // shared vertex buffer object
+        inline static GLuint VAO; // shared vertex array object
+        inline static bool hasInitializedStatics = false; // True if has generated VBO and VAO, see constructor
 
         std::array<glm::vec3, 6> vertices;
 
@@ -51,6 +55,7 @@ class Sprite
     protected:
 
     private:
+        Transform m_Transform; // Describes how to transform this Sprite's vertices from local space to world space
         std::unique_ptr<SDL_Texture, TextureDestroyer> m_Texture;
 };
 

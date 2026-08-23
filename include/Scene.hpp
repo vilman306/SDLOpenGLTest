@@ -4,6 +4,7 @@
 #include <SDL3/SDL_video.h>
 #include <SDL3/SDL_render.h>
 #include <memory>
+#include "Sprite.hpp"
 
 struct WindowDeleter
 {
@@ -43,6 +44,12 @@ class Scene
 //        std::unique_ptr<SDL_Renderer, RendererDeleter> m_Renderer;
         std::unique_ptr<SDL_GLContextState, GLContextDeleter> m_GLContext; // SDL_GLContextState == std::remove_pointer_t<SDL_GLContext>
         bool m_IsValid = true;
+
+        Sprite sprite1;
+        Sprite sprite2;
+        Sprite sprite3;
+        void SetupSprites();
+        void DrawSprites();
 };
 
 #endif // SCENE_HPP

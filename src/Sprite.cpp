@@ -3,7 +3,7 @@
 #include <string>
 #include <iostream>
 
-Sprite::Sprite(GLuint p_VBO) : VBO(p_VBO)
+Sprite::Sprite()
 {
     nrOfSprites++;
 
@@ -21,11 +21,7 @@ Sprite::Sprite(GLuint p_VBO) : VBO(p_VBO)
     vertices = {topLeft, bottomLeft, bottomRight,
                 bottomLeft, bottomRight, topRight};
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-         // does this work??
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
-
-    UpdateVBO();
+//    UpdateVBO();
 }
 
 Sprite::~Sprite()
@@ -33,8 +29,39 @@ Sprite::~Sprite()
     //dtor
 }
 
-void Sprite::UpdateVBO()
+void Sprite::InitializeOpenGL()
 {
+
+    if (hasInitializedStatics)
+        throw std::runtime_error("Sprite::InitializeOpenGL has already been called.");
+    glGenBuffers(1, &VBO); // Create vertex buffer object (for all sprites)
+    glGenVertexArrays(1, &VAO); // Create vertex buffer object (for all sprites)
+    glBindVertexArray(VAO);
+
+    // Specify vertex attributes
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    GLuint positionAttribIndex = 0;
+    glVertexAttribPointer(positionAttribIndex, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+    glEnableVertexArrayAttrib(VAO, positionAttribIndex);
+
+    hasInitializedStatics = true;
+
+}
+
+void Sprite::UploadVerticesToVBO()
+{
+    if (!hasInitializedStatics)
+        throw std::runtime_error("Trying to upload vertices to VBO before VBO has been created (Sprite::InitializeOpenGL() has not been called.");
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+                                                                    // does this work??
+//    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+         // does this work??
+    glBufferSubData(GL_ARRAY_BUFFER, spriteNr * vertices.size() * sizeof(glm::vec3), vertices.size() * sizeof(glm::vec3), vertices.data());
+}
+
+//void Sprite::UpdateVBO()
+//{
     // update the model matrix (which transforms from local space to world space)
     // instead of updating each vertex in the vbo
 
@@ -56,7 +83,7 @@ void Sprite::UpdateVBO()
 //    glBindBuffer(GL_ARRAY_BUFFER, VBO);
 //         // does this work??
 //    glBufferSubData(GL_ARRAY_BUFFER, spriteNr * vertices.size() * sizeof(glm::vec3), vertices.size() * sizeof(glm::vec3), vertices.data());
-}
+//}
 
 //void Sprite::Draw(SDL_Renderer* renderer)
 //{
