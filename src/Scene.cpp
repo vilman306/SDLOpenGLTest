@@ -169,13 +169,13 @@ void SetupOpenGL()
 
 
     // Matrices
-    viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0f, 0.0f, -3.0f)); // Create vuiew matrix (for "camera")
+    viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0f, 0.0f, -100.0f)); // Create vuiew matrix (for "camera")
     if ((viewMatrixLocation = glGetUniformLocation(shaderProgram, "view")) == -1) // Get location
         throw std::runtime_error("Failed to get view matrix location in shader program.");
     glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix)); // Send it to shader program uniform (do it here, once, since will never change)
 
 
-    projectionMatrix = glm::perspective(glm::radians(45.0f), static_cast<float>(Config::WindowWidth) / Config::WindowHeight, 0.1f, 100.0f); // For clipping and depth
+    projectionMatrix = glm::perspective(glm::radians(45.0f), static_cast<float>(Config::WindowWidth) / Config::WindowHeight, 0.1f, 1000.0f); // For clipping and depth
     if ((projectionMatrixLocation = glGetUniformLocation(shaderProgram, "projection")) == -1)
         throw std::runtime_error("Failed to get projection matrix location in shader program.");
     glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
@@ -192,27 +192,32 @@ void Scene::SetupSprites()
     sprite1.UploadVerticesToVBO();
     sprite2.UploadVerticesToVBO();
     sprite3.UploadVerticesToVBO();
-    sprite1.SetPosition(glm::vec3(40.0f, 40.0f, -2.0f));
-    sprite2.SetPosition(glm::vec3(120.0f, 120.0f, -1.0f));
-    sprite3.SetPosition(glm::vec3(80.0f, 80.0f, 0.0f));
+    sprite1.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    sprite2.SetPosition(glm::vec3(20.0f, 20.0f, -1.0f));
+    sprite3.SetPosition(glm::vec3(40.0f, 40.0f, -2.0f));
+
 }
 
+#include <SDL3/SDL_time.h>
 void Scene::DrawSprites()
 {
     glUseProgram(shaderProgram);
     glBindVertexArray(Sprite::VAO);
 
+    Uint64 ticks = SDL_GetTicks();
+    sprite1.SetRotation(ticks / 5.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+
     int nrOfVertices = 6;
 
     // Send model matrix to vertex shader (as uniform)
-    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite1.modelMatrix));
+    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite1.GetModelMatrix()));
                             // correct?
     glDrawArrays(GL_TRIANGLES, 0, nrOfVertices);
 
-    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite2.modelMatrix));
+    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite2.GetModelMatrix()));
     glDrawArrays(GL_TRIANGLES, 1 * nrOfVertices, nrOfVertices);
 
-    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite3.modelMatrix));
+    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite3.GetModelMatrix()));
     glDrawArrays(GL_TRIANGLES, 2 * nrOfVertices, nrOfVertices);
 
 }

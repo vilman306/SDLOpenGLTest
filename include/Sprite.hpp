@@ -29,14 +29,18 @@ class Sprite
 
         float position_x = 20;
         float position_y = 30;
-        int width = 100;
-        int height = 100;
+        int width = 50;
+        int height = 40;
 
         Transform GetTransform() {return m_Transform;}
         void SetTransform(Transform p_Transform) {m_Transform = p_Transform; UpdateModelMatrix();}
         void SetPosition(glm::vec3 position) {m_Transform.Position = position; UpdateModelMatrix();}
+        void SetRotation(float angleInDegrees, glm::vec3 axis) {
+            m_Transform.SetRotation(angleInDegrees, axis);
+            UpdateModelMatrix();
+        }
 
-        glm::mat4 modelMatrix = m_Transform.ToModelMatrix();
+        glm::mat4 GetModelMatrix() {return modelMatrix;}
         void UpdateModelMatrix() {modelMatrix = m_Transform.ToModelMatrix();}
 
         static void InitializeOpenGL(); // Creates the
@@ -49,6 +53,8 @@ class Sprite
 
         inline static unsigned int nrOfSprites = 0;
 
+        inline static const int MAX_NR_OF_SPRITES = 1000;
+
         unsigned int spriteNr = nrOfSprites; // 1st sprite: spriteNr=0, 2nd sprite: spriteNr=1, ...
 
 
@@ -56,6 +62,7 @@ class Sprite
 
     private:
         Transform m_Transform; // Describes how to transform this Sprite's vertices from local space to world space
+        glm::mat4 modelMatrix = m_Transform.ToModelMatrix();
         std::unique_ptr<SDL_Texture, TextureDestroyer> m_Texture;
 };
 

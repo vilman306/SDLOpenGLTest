@@ -18,4 +18,9 @@ glm::mat4 ToModelMatrix()
     return translation * rotation * scale;
 }
 
+void SetRotation(float angleInDegrees, glm::vec3 axis)
+{
+    Rotation = glm::angleAxis(glm::radians(angleInDegrees), glm::normalize(axis));
+}
+
 };

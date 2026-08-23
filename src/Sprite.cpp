@@ -19,7 +19,7 @@ Sprite::Sprite()
 
     // vertices array in local coordinates
     vertices = {topLeft, bottomLeft, bottomRight,
-                bottomLeft, bottomRight, topRight};
+                bottomRight, topRight, topLeft};
 
 //    UpdateVBO();
 }
@@ -40,9 +40,12 @@ void Sprite::InitializeOpenGL()
 
     // Specify vertex attributes
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, MAX_NR_OF_SPRITES * 6 * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
+//    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW); // incorrect, only if one sprite
     GLuint positionAttribIndex = 0;
-    glVertexAttribPointer(positionAttribIndex, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
-    glEnableVertexArrayAttrib(VAO, positionAttribIndex);
+    glVertexAttribPointer(positionAttribIndex, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+//    glEnableVertexArrayAttrib(VAO, positionAttribIndex);
+    glEnableVertexAttribArray(positionAttribIndex); // shouldnt matter which one to use...
 
     hasInitializedStatics = true;
 
