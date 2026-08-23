@@ -142,10 +142,11 @@ GLuint CreateShaderProgram(GLuint vertexShader, GLuint fragmentShader)
 
 glm::mat4 viewMatrix(1.0f);
 glm::mat4 projectionMatrix(1.0f);
-GLuint shaderProgram;
+GLuint shaderProgram; // Shader program for drawing sprites
 GLint modelMatrixLocation;
 GLint viewMatrixLocation;
 GLint projectionMatrixLocation;
+GLint spriteTextureLocation;
 
 #include <SDL3/SDL_filesystem.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -168,12 +169,11 @@ void SetupOpenGL()
 
 
 
-    // Matrices
+    // Matrices: create, get their uniform locations
     viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0f, 0.0f, -100.0f)); // Create vuiew matrix (for "camera")
     if ((viewMatrixLocation = glGetUniformLocation(shaderProgram, "view")) == -1) // Get location
         throw std::runtime_error("Failed to get view matrix location in shader program.");
     glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix)); // Send it to shader program uniform (do it here, once, since will never change)
-
 
     projectionMatrix = glm::perspective(glm::radians(45.0f), static_cast<float>(Config::WindowWidth) / Config::WindowHeight, 0.1f, 1000.0f); // For clipping and depth
     if ((projectionMatrixLocation = glGetUniformLocation(shaderProgram, "projection")) == -1)
@@ -182,6 +182,13 @@ void SetupOpenGL()
 
     if ((modelMatrixLocation = glGetUniformLocation(shaderProgram, "model")) == -1)
         throw std::runtime_error("Failed to get model matrix location in shader program.");
+
+
+    // Get sprite texture uniform location
+    if ((spriteTextureLocation = glGetUniformLocation(shaderProgram, "spriteTexture")) == -1)
+        throw std::runtime_error("Failed to get sprite texture location in shader program.");
+
+    glUniform1i(spriteTextureLocation, 0); // Set which sampler unit the uniform (sampler2D) belongs to (0 = GL_TEXTURE0)
 }
 
 
@@ -189,12 +196,12 @@ void SetupOpenGL()
 void Scene::SetupSprites()
 {
     Sprite::InitializeOpenGL();
-//    sprite1.UploadVerticesToVBO();
-//    sprite2.UploadVerticesToVBO();
-//    sprite3.UploadVerticesToVBO();
     sprite1.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     sprite2.SetPosition(glm::vec3(20.0f, 20.0f, -1.0f));
     sprite3.SetPosition(glm::vec3(40.0f, 40.0f, -2.0f));
+    sprite1.LoadTexture("default.png");
+    sprite2.LoadTexture("testimage.png");
+    sprite3.LoadTexture("testimage2.png");
 
 }
 
@@ -206,20 +213,23 @@ void Scene::DrawSprites()
 
     Uint64 ticks = SDL_GetTicks();
     sprite1.SetRotation(ticks / 5.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+    sprite2.SetRotation(ticks / 5.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    sprite3.SetRotation(ticks / 5.0f, glm::vec3(0.5f, 0.5f, 0.0f));
 
 //    int nrOfVertices = 6;
 
-    // Send model matrix to vertex shader (as uniform)
-    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite1.GetModelMatrix()));
-                            // correct?
-//    glDrawArrays(GL_TRIANGLES, 0, nrOfVertices);
+    glActiveTexture(GL_TEXTURE0); // Set which texture unit to bind textures to
+
+    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite1.GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
+    glBindTexture(GL_TEXTURE_2D, sprite1.m_Texture);
     glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
 
     glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite2.GetModelMatrix()));
-//    glDrawArrays(GL_TRIANGLES, 1 * nrOfVertices, nrOfVertices);
+    glBindTexture(GL_TEXTURE_2D, sprite2.m_Texture);
     glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
 
     glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite3.GetModelMatrix()));
+    glBindTexture(GL_TEXTURE_2D, sprite3.m_Texture);
     glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
 //    glDrawArrays(GL_TRIANGLES, 2 * nrOfVertices, nrOfVertices);
 

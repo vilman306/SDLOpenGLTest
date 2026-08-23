@@ -1,8 +1,12 @@
 #version 330 core
 
+in vec2 TexCoord;
+
 out vec4 FragColor;
+
+uniform sampler2D spriteTexture;
 
 void main()
 {
-    FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    FragColor = texture(spriteTexture, TexCoord);
 }

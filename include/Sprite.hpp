@@ -23,7 +23,7 @@ class Sprite
 
         GLuint m_Texture = 0; // 0 means no texture
 
-        void LoadTexture(const std::string& filePath); // Loads image (png) to GPU
+        void LoadTexture(const std::string& fileName); // Loads image (png) to GPU
 
 //        SDL_Texture* GetTexture() { return m_Texture.get(); }
 
@@ -42,12 +42,14 @@ class Sprite
             UpdateModelMatrix();
         }
 
+        static constexpr float sizeScaleFactor = 0.1f; // Used in UpdateModelMatrix to determine how the sprite's width and height affects scale.
+
         glm::mat4 GetModelMatrix() {return modelMatrix;}
         void UpdateModelMatrix() {
             glm::mat4 translation = glm::translate(glm::mat4(1.0f), m_Transform.Position);
             glm::mat4 rotation = glm::mat4_cast(m_Transform.Rotation);
             glm::mat4 transformScale = glm::scale(glm::mat4(1.0f), m_Transform.Scale);
-            glm::mat4 sizeScale = glm::scale(glm::mat4(1.0f), glm::vec3(width, height, 0.0f));
+            glm::mat4 sizeScale = glm::scale(glm::mat4(1.0f), sizeScaleFactor * glm::vec3(width, height, 0.0f));
             modelMatrix = translation * rotation * sizeScale * transformScale;
         }
 
@@ -60,10 +62,13 @@ class Sprite
 
         static const unsigned int nrOfVertices = 4; // nr of vertices when using an element buffer object
         static const unsigned int nrOfVertexIndices = 6; // -- || -- when not using an element buffer object
-                                                                            // top left                     bottom left
-        static inline const std::array<glm::vec3, nrOfVertices> vertices = {glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec3(-0.5f, -0.5f, 0.0f),
-                                                                            glm::vec3(0.5f, -0.5f, 0.0f), glm::vec3(0.5f, 0.5f, 0.0f)};
-                                                                            // bottom right                 top right
+
+                                                                        // position         // texture coord
+        static inline const std::array<float, nrOfVertices * (3+2)> vertices =
+                                                                       {-0.5f, 0.5f, 0.0f,      0.0f, 1.0f, // top left
+                                                                        -0.5f, -0.5f, 0.0f,    0.0f, 0.0f, // bottom left
+                                                                        0.5f, -0.5f, 0.0f,     1.0f, 0.0f, // bottom right
+                                                                        0.5f, 0.5f, 0.0f,       1.0f, 1.0f}; // top right
         static inline const std::array<GLuint, nrOfVertexIndices> vertexIndices = {0, 1, 2, 2, 3, 0};
 
         static inline unsigned int nrOfSprites = 0;

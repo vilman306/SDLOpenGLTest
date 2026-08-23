@@ -46,13 +46,18 @@ void Sprite::InitializeOpenGL()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
 //    glBufferData(GL_ARRAY_BUFFER, MAX_NR_OF_SPRITES * nrOfVertices * sizeof(glm::vec3), nullptr, GL_STATIC_DRAW); // Initialize buffer data with null
-    glBufferData(GL_ARRAY_BUFFER, nrOfVertices * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, nrOfVertexIndices * sizeof(GLuint), vertexIndices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertexIndices), vertexIndices.data(), GL_STATIC_DRAW);
 
-    // Specify vertex attributes
+    // Specify position vertex attributes
     GLuint positionAttribIndex = 0;
-    glVertexAttribPointer(positionAttribIndex, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+    glVertexAttribPointer(positionAttribIndex, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
     glEnableVertexArrayAttrib(VAO, positionAttribIndex);
+
+    // Specify texture coordinate vertex attributes
+    GLuint textureCoordAttribIndex = 1;
+    glVertexAttribPointer(textureCoordAttribIndex, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
+    glEnableVertexArrayAttrib(VAO, textureCoordAttribIndex);
 
     // Unbind buffers
     glBindVertexArray(0);
@@ -125,9 +130,9 @@ GLenum GetColorFormat(int nrOfColorChannels)
 
 #include <stb_image.h>
 
-void Sprite::LoadTexture(const std::string& filePath)
+void Sprite::LoadTexture(const std::string& fileName)
 {
-    std::string fullPath = std::string(SDL_GetBasePath()) + "/textures/" + filePath;
+    std::string fullPath = std::string(SDL_GetBasePath()) + "/textures/" + fileName;
 //    SDL_Surface* surface = SDL_LoadPNG(fullPath.c_str());
 //    if (!surface) {
 //        std::cout << "ERROR: failed to create surface from '" << fullPath << "'." << std::endl;
@@ -144,7 +149,8 @@ void Sprite::LoadTexture(const std::string& filePath)
 //
 //    SDL_DestroySurface(surface);
 
-    // Load texture data from path
+    // Load & store image data from path
+    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
     int nrOfColorChannels;
     unsigned char* data = stbi_load(fullPath.c_str(), &width, &height, &nrOfColorChannels, 0);
     if (!data)
@@ -167,6 +173,9 @@ void Sprite::LoadTexture(const std::string& filePath)
     glTexImage2D(GL_TEXTURE_2D, 0, colorFormat, width, height, 0, colorFormat, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    stbi_image_free(data);
+    stbi_image_free(data); // Free the loaded image data
+    glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
+
+    UpdateModelMatrix(); // Update model matrix, since width and height has changed (affects scale)
 
 }
