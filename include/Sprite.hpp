@@ -27,8 +27,8 @@ class Sprite
 
 //        void UpdateVBO();
 
-        float position_x = 20;
-        float position_y = 30;
+        float position_x = 0;
+        float position_y = 0;
         int width = 50;
         int height = 40;
 
@@ -41,20 +41,31 @@ class Sprite
         }
 
         glm::mat4 GetModelMatrix() {return modelMatrix;}
-        void UpdateModelMatrix() {modelMatrix = m_Transform.ToModelMatrix();}
+        void UpdateModelMatrix() {
+            glm::mat4 translation = glm::translate(glm::mat4(1.0f), m_Transform.Position);
+            glm::mat4 rotation = glm::mat4_cast(m_Transform.Rotation);
+            glm::mat4 transformScale = glm::scale(glm::mat4(1.0f), m_Transform.Scale);
+            glm::mat4 sizeScale = glm::scale(glm::mat4(1.0f), glm::vec3(width, height, 0.0f));
+            modelMatrix = translation * rotation * sizeScale * transformScale;
+        }
 
-        static void InitializeOpenGL(); // Creates the
-        void UploadVerticesToVBO();
-        inline static GLuint VBO; // shared vertex buffer object
-        inline static GLuint VAO; // shared vertex array object
-        inline static bool hasInitializedStatics = false; // True if has generated VBO and VAO, see constructor
+        static void InitializeOpenGL(); // Call once, this creates the VBO, VAO etc
+//        void UploadVerticesToVBO();
+        static inline GLuint VBO; // shared vertex buffer object
+        static inline GLuint VAO; // shared vertex array object
+        static inline GLuint EBO; // shared element buffer object
+        static inline bool hasInitializedStatics = false; // True if has generated VBO and VAO, see constructor
 
-        std::array<glm::vec3, 6> vertices;
+        static const unsigned int nrOfVertices = 4; // nr of vertices when using an element buffer object
+        static const unsigned int nrOfVertexIndices = 6; // -- || -- when not using an element buffer object
+                                                                            // top left                     bottom left
+        static inline const std::array<glm::vec3, nrOfVertices> vertices = {glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec3(-0.5f, -0.5f, 0.0f),
+                                                                            glm::vec3(0.5f, -0.5f, 0.0f), glm::vec3(0.5f, 0.5f, 0.0f)};
+                                                                            // bottom right                 top right
+        static inline const std::array<GLuint, nrOfVertexIndices> vertexIndices = {0, 1, 2, 2, 3, 0};
 
-        inline static unsigned int nrOfSprites = 0;
-
-        inline static const int MAX_NR_OF_SPRITES = 1000;
-
+        static inline unsigned int nrOfSprites = 0;
+        static const int MAX_NR_OF_SPRITES = 1000;
         unsigned int spriteNr = nrOfSprites; // 1st sprite: spriteNr=0, 2nd sprite: spriteNr=1, ...
 
 

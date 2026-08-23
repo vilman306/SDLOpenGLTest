@@ -7,19 +7,21 @@ Sprite::Sprite()
 {
     nrOfSprites++;
 
+    // Change transform scale to match width and height
+
     // local axes
-    glm::vec3 rightDir = {1.0f, 0.0f, 0.0f};
-    glm::vec3 upDir = {0.0f, 1.0f, 0.0f};
-
-    // vertex positions in local coordinates
-    glm::vec3 topLeft = 0.5f * height * upDir - 0.5f * width * rightDir;
-    glm::vec3 topRight = 0.5f * height * upDir + 0.5f * width* rightDir;
-    glm::vec3 bottomLeft = -0.5f * height * upDir - 0.5f * width * rightDir;
-    glm::vec3 bottomRight = -0.5f * height * upDir + 0.5f * width * rightDir;
-
-    // vertices array in local coordinates
-    vertices = {topLeft, bottomLeft, bottomRight,
-                bottomRight, topRight, topLeft};
+//    glm::vec3 rightDir = {1.0f, 0.0f, 0.0f};
+//    glm::vec3 upDir = {0.0f, 1.0f, 0.0f};
+//
+//    // vertex positions in local coordinates
+//    glm::vec3 topLeft = 0.5f * height * upDir - 0.5f * width * rightDir;
+//    glm::vec3 topRight = 0.5f * height * upDir + 0.5f * width* rightDir;
+//    glm::vec3 bottomLeft = -0.5f * height * upDir - 0.5f * width * rightDir;
+//    glm::vec3 bottomRight = -0.5f * height * upDir + 0.5f * width * rightDir;
+//
+//    // vertices array in local coordinates
+//    vertices = {topLeft, bottomLeft, bottomRight, topRight};
+//    vertexIndices = {0, 1, 2, 2, 3, 4};
 
 //    UpdateVBO();
 }
@@ -31,37 +33,45 @@ Sprite::~Sprite()
 
 void Sprite::InitializeOpenGL()
 {
-
     if (hasInitializedStatics)
         throw std::runtime_error("Sprite::InitializeOpenGL has already been called.");
+
     glGenBuffers(1, &VBO); // Create vertex buffer object (for all sprites)
     glGenVertexArrays(1, &VAO); // Create vertex buffer object (for all sprites)
+    glGenBuffers(1, &EBO);
+
     glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+//    glBufferData(GL_ARRAY_BUFFER, MAX_NR_OF_SPRITES * nrOfVertices * sizeof(glm::vec3), nullptr, GL_STATIC_DRAW); // Initialize buffer data with null
+    glBufferData(GL_ARRAY_BUFFER, nrOfVertices * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, nrOfVertexIndices * sizeof(GLuint), vertexIndices.data(), GL_STATIC_DRAW);
 
     // Specify vertex attributes
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, MAX_NR_OF_SPRITES * 6 * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
-//    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW); // incorrect, only if one sprite
     GLuint positionAttribIndex = 0;
     glVertexAttribPointer(positionAttribIndex, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
-//    glEnableVertexArrayAttrib(VAO, positionAttribIndex);
-    glEnableVertexAttribArray(positionAttribIndex); // shouldnt matter which one to use...
+    glEnableVertexArrayAttrib(VAO, positionAttribIndex);
+
+    // Unbind buffers
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     hasInitializedStatics = true;
-
 }
-
-void Sprite::UploadVerticesToVBO()
-{
-    if (!hasInitializedStatics)
-        throw std::runtime_error("Trying to upload vertices to VBO before VBO has been created (Sprite::InitializeOpenGL() has not been called.");
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-                                                                    // does this work??
-//    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
-         // does this work??
-    glBufferSubData(GL_ARRAY_BUFFER, spriteNr * vertices.size() * sizeof(glm::vec3), vertices.size() * sizeof(glm::vec3), vertices.data());
-}
+//
+//void Sprite::UploadVerticesToVBO()
+//{
+//    if (!hasInitializedStatics)
+//        throw std::runtime_error("Trying to upload vertices to VBO before VBO has been created (Sprite::InitializeOpenGL() has not been called.");
+//
+//    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+//                                                                    // does this work??
+////    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+//         // does this work??
+//    glBufferSubData(GL_ARRAY_BUFFER, spriteNr * vertices.size() * sizeof(glm::vec3), vertices.size() * sizeof(glm::vec3), vertices.data());
+//}
 
 //void Sprite::UpdateVBO()
 //{

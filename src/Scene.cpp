@@ -189,9 +189,9 @@ void SetupOpenGL()
 void Scene::SetupSprites()
 {
     Sprite::InitializeOpenGL();
-    sprite1.UploadVerticesToVBO();
-    sprite2.UploadVerticesToVBO();
-    sprite3.UploadVerticesToVBO();
+//    sprite1.UploadVerticesToVBO();
+//    sprite2.UploadVerticesToVBO();
+//    sprite3.UploadVerticesToVBO();
     sprite1.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     sprite2.SetPosition(glm::vec3(20.0f, 20.0f, -1.0f));
     sprite3.SetPosition(glm::vec3(40.0f, 40.0f, -2.0f));
@@ -207,18 +207,21 @@ void Scene::DrawSprites()
     Uint64 ticks = SDL_GetTicks();
     sprite1.SetRotation(ticks / 5.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 
-    int nrOfVertices = 6;
+//    int nrOfVertices = 6;
 
     // Send model matrix to vertex shader (as uniform)
     glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite1.GetModelMatrix()));
                             // correct?
-    glDrawArrays(GL_TRIANGLES, 0, nrOfVertices);
+//    glDrawArrays(GL_TRIANGLES, 0, nrOfVertices);
+    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
 
     glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite2.GetModelMatrix()));
-    glDrawArrays(GL_TRIANGLES, 1 * nrOfVertices, nrOfVertices);
+//    glDrawArrays(GL_TRIANGLES, 1 * nrOfVertices, nrOfVertices);
+    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
 
     glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite3.GetModelMatrix()));
-    glDrawArrays(GL_TRIANGLES, 2 * nrOfVertices, nrOfVertices);
+    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
+//    glDrawArrays(GL_TRIANGLES, 2 * nrOfVertices, nrOfVertices);
 
 }
 
