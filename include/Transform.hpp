@@ -2,7 +2,7 @@
 
 #include <glm/vec3.hpp>
 #include <glm/gtc/quaternion.hpp>
-
+#include <stdexcept>
 
 struct Transform
 {
@@ -20,6 +20,8 @@ glm::mat4 ToModelMatrix()
 
 void SetRotation(float angleInDegrees, glm::vec3 axis)
 {
+    if (glm::length(axis) == 0.0f)
+        throw std::runtime_error("Trying to rotate around an axis that is a zero vector.");
     Rotation = glm::angleAxis(glm::radians(angleInDegrees), glm::normalize(axis));
 }
 

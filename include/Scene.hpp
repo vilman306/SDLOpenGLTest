@@ -5,6 +5,7 @@
 #include <SDL3/SDL_render.h>
 #include <memory>
 #include "Sprite.hpp"
+#include "Camera.hpp"
 
 struct WindowDeleter
 {
@@ -33,9 +34,9 @@ class Scene
         Scene();
         virtual ~Scene();
 
-        void Update(double deltaTime);
+        void Update(double deltaTime, Camera& camera);
         bool IsValid() const { return m_IsValid; }
-        void ProcessInput(SDL_Event* event);
+        void ProcessInputEvent(SDL_Event* event);
 
     protected:
 
@@ -49,7 +50,7 @@ class Scene
         Sprite sprite2;
         Sprite sprite3;
         void SetupSprites();
-        void DrawSprites();
+        void DrawSprites(Camera& camera);
 };
 
 #endif // SCENE_HPP

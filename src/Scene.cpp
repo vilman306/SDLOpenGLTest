@@ -167,18 +167,19 @@ void SetupOpenGL()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-
+    glEnable(GL_DEPTH_TEST); // Enable depth testing
 
     // Matrices: create, get their uniform locations
-    viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0f, 0.0f, -100.0f)); // Create vuiew matrix (for "camera")
+//    viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0f, 0.0f, -100.0f)); // Create vuiew matrix (for "camera")
     if ((viewMatrixLocation = glGetUniformLocation(shaderProgram, "view")) == -1) // Get location
         throw std::runtime_error("Failed to get view matrix location in shader program.");
-    glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix)); // Send it to shader program uniform (do it here, once, since will never change)
+//    glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix)); // Send it to shader program uniform (do it here, once, since will never change)
 
-    projectionMatrix = glm::perspective(glm::radians(45.0f), static_cast<float>(Config::WindowWidth) / Config::WindowHeight, 0.1f, 1000.0f); // For clipping and depth
+//    float fovDegrees = 90.0f;
+//    projectionMatrix = glm::perspective(glm::radians(fovDegrees), static_cast<float>(Config::WindowWidth) / Config::WindowHeight, 0.1f, 1000.0f); // For clipping and depth
     if ((projectionMatrixLocation = glGetUniformLocation(shaderProgram, "projection")) == -1)
         throw std::runtime_error("Failed to get projection matrix location in shader program.");
-    glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+//    glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
     if ((modelMatrixLocation = glGetUniformLocation(shaderProgram, "model")) == -1)
         throw std::runtime_error("Failed to get model matrix location in shader program.");
@@ -206,50 +207,53 @@ void Scene::SetupSprites()
 }
 
 #include <SDL3/SDL_time.h>
-void Scene::DrawSprites()
+void Scene::DrawSprites(Camera& camera)
 {
+    // Begin drawing sprites
     glUseProgram(shaderProgram);
     glBindVertexArray(Sprite::VAO);
 
+    // Set sprite rotations
     Uint64 ticks = SDL_GetTicks();
     sprite1.SetRotation(ticks / 5.0f, glm::vec3(1.0f, 0.0f, 0.0f));
     sprite2.SetRotation(ticks / 5.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     sprite3.SetRotation(ticks / 5.0f, glm::vec3(0.5f, 0.5f, 0.0f));
 
-//    int nrOfVertices = 6;
-
     glActiveTexture(GL_TEXTURE0); // Set which texture unit to bind textures to
 
+    // Send camera matrices to shader program's uniforms
+//    glm::mat4 cameraViewMatrix = camera.GetViewMatrix();
+//    glm::mat4 cameraProjectionMatrix = camera.GetProjectionMatrix();
+    glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix())); // View matrix
+    glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(camera.GetProjectionMatrix())); // Perspective matrix
+
+    // Sprite 1
     glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite1.GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
     glBindTexture(GL_TEXTURE_2D, sprite1.m_Texture);
     glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
 
+    // Sprite 2
     glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite2.GetModelMatrix()));
     glBindTexture(GL_TEXTURE_2D, sprite2.m_Texture);
     glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
 
+    // Sprite 3
     glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite3.GetModelMatrix()));
     glBindTexture(GL_TEXTURE_2D, sprite3.m_Texture);
     glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
-//    glDrawArrays(GL_TRIANGLES, 2 * nrOfVertices, nrOfVertices);
 
 }
 
 
-void Scene::Update(double deltaTime)
+void Scene::Update(double deltaTime, Camera& camera)
 {
     try
     {
         // RENDERING:
-        // --------
-        // Clear
-//        SDL_SetRenderDrawColorFloat(m_Renderer.get(), 0.25f, 0.25f, 0.25f, SDL_ALPHA_OPAQUE_FLOAT);
-//        SDL_RenderClear(m_Renderer.get());
 
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-        DrawSprites();
+        DrawSprites(camera);
 
         SDL_GL_SwapWindow(m_Window.get());
 
@@ -261,7 +265,7 @@ void Scene::Update(double deltaTime)
 }
 
 
-void Scene::ProcessInput(SDL_Event* event)
+void Scene::ProcessInputEvent(SDL_Event* event)
 {
     // New window resolution
     if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)

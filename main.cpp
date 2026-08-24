@@ -42,7 +42,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     Game* game = static_cast<Game*>(appstate);
 
     try {
-        game->ProcessInput(event);
+        game->ProcessInputEvent(event);
     }
     catch (std::exception& e) {
         std::cout << "ERROR: " << e.what() << std::endl;

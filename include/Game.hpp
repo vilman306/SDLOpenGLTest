@@ -11,12 +11,14 @@ class Game
 
         void Update();
         Scene& GetScene() { return m_Scene; }
-        void ProcessInput(SDL_Event* event);
+        void ProcessInputEvent(SDL_Event* event);
 
     protected:
 
     private:
         Scene m_Scene;
+        Camera m_Camera; // Should be an entity with a CameraComponent, stored in World
+
 };
 
 #endif // GAME_HPP
