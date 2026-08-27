@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <iostream>
 
+
 Game::Game()
 {
     //ctor
@@ -20,24 +21,20 @@ void Game::Update()
     static double previousTime = currentTime;
     double deltaTime = currentTime - previousTime;
 
+    m_InputSystem.Poll(); // Polls/gets input
+    m_Camera.Update(m_InputSystem.GetCameraInput(), deltaTime);
+
+
     // Camear movement (TODO: MOVE ELSEWHERE)
-    const bool* key_states = SDL_GetKeyboardState(nullptr);
-    glm::vec2 cameraXZMovement(0.0f); // x = X (right), y = Z (backward)
-    if (key_states[SDL_SCANCODE_W])
-        cameraXZMovement.y -= 1.0f;
-    if (key_states[SDL_SCANCODE_S])
-        cameraXZMovement.y += 1.0f;
-    if (key_states[SDL_SCANCODE_A])
-        cameraXZMovement.x -= 1.0f;
-    if (key_states[SDL_SCANCODE_D])
-        cameraXZMovement.x += 1.0f;
-    glm::vec3 movementAxis = glm::vec3(cameraXZMovement.x, 0, cameraXZMovement.y);
-    float movementSpeed = 200.0f;
 
-    if (glm::length(movementAxis) > 0.0f) {
-        m_Camera.Translate(movementSpeed * deltaTime, movementAxis);
 
-    }
+//    m_Camera.Move(cameraXZMovement, deltaTime);
+//
+//    float xRel, yRel = 0.0f;
+//    SDL_GetRelativeMouseState(&xRel, &yRel);
+//    if (xRel != 0.0f || yRel != 0.0f)
+//        std::cout << xRel << "   " << yRel << "\n";
+
 
     // Update scene
     if (!m_Scene.IsValid())
@@ -50,4 +47,10 @@ void Game::Update()
 void Game::ProcessInputEvent(SDL_Event* event)
 {
     m_Scene.ProcessInputEvent(event);
+
+//    if (event->type == SDL_EVENT_MOUSE_MOTION) {
+//        float xrel = event->motion.xrel;
+//        float yrel = -event->motion.yrel;
+//        m_Camera.Look(xrel, yrel);
+//    }
 }

@@ -2,6 +2,7 @@
 #define GAME_HPP
 
 #include "Scene.hpp"
+#include "InputSystem.hpp"
 
 class Game
 {
@@ -18,6 +19,7 @@ class Game
     private:
         Scene m_Scene;
         Camera m_Camera; // Should be an entity with a CameraComponent, stored in World
+        InputSystem m_InputSystem;
 
 };
 

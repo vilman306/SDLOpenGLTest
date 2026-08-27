@@ -8,6 +8,7 @@
 #include "Config.h"
 #include <stdexcept>
 #include <iostream>
+#include "InputSystem.hpp"
 
 class Camera
 {
@@ -19,18 +20,29 @@ class Camera
         void SetViewMatrix(glm::mat4 val) { m_ViewMatrix = val; }
         glm::mat4 GetProjectionMatrix() { return m_ProjectionMatrix; }
         void SetProjectionMatrix(glm::mat4 val) { m_ProjectionMatrix = val; }
-
-        void Translate(glm::vec3 translationVector)
+//
+//        void Translate(glm::vec3 translationVector)
+//        {
+//            if (glm::length(translationVector) == 0.0f)
+//                throw std::runtime_error("Trying to translate along an axis that is a zero vector.");
+//            m_ViewMatrix = glm::translate(m_ViewMatrix, -translationVector);
+//        }
+//        void Translate(float amount, glm::vec3 axis)
+//        {
+//            if (glm::length(axis) == 0.0f)
+//                throw std::runtime_error("Trying to translate along an axis that is a zero vector.");
+//            m_ViewMatrix = glm::translate(m_ViewMatrix, -amount * glm::normalize(axis));
+//        }
+//        void Rotate(float angleInDegrees, glm::vec3 axis)
+//        {
+//            if (glm::length(axis) == 0.0f)
+//                throw std::runtime_error("Trying to translate along an axis that is a zero vector.");
+//            m_ViewMatrix = glm::rotate(m_ViewMatrix, glm::radians(angleInDegrees), glm::normalize(axis));
+//        }
+        void Update(CameraInputState input, double deltaTime)
         {
-            if (glm::length(translationVector) == 0.0f)
-                throw std::runtime_error("Trying to translate along an axis that is a zero vector.");
-            m_ViewMatrix = glm::translate(m_ViewMatrix, -translationVector);
-        }
-        void Translate(float amount, glm::vec3 axis)
-        {
-            if (glm::length(axis) == 0.0f)
-                throw std::runtime_error("Trying to translate along an axis that is a zero vector.");
-            m_ViewMatrix = glm::translate(m_ViewMatrix, -amount * glm::normalize(axis));
+            Move(glm::vec2(input.MoveRight, input.MoveForward), static_cast<float>(deltaTime));
+            Look(input.LookDeltaX, input.LookDeltaY);
         }
         void UpdateProjectionMatrix()
         {
@@ -66,14 +78,72 @@ class Camera
             }
             std::cout << "End of view matrix print!\n";
         }
+        void SetPosition(glm::vec3 pos)
+        {
+            m_Position = pos;
+            UpdateViewMatrix();
+        }
+        void UpdateViewMatrix()
+        {
+            m_ViewMatrix = glm::lookAt(m_Position, m_Position + m_Front, m_Up);
+        }
+        glm::vec3 GetRightDir()
+        {
+            return glm::normalize(glm::cross(m_Front, m_Up));
+        }
+        void Move(glm::vec2 inputXZ, double deltaTime)
+        {
+            if (glm::length(inputXZ) == 0.0f)
+                return;
+            glm::vec3 movementAxis = glm::normalize(inputXZ.y * glm::vec3(m_Front.x, 0.0f, m_Front.z) + inputXZ.x * GetRightDir()); //glm::vec3(inputXZ.x, 0, inputXZ.y);
+//            m_ViewMatrix = glm::translate(m_ViewMatrix, -movementSpeed * static_cast<float>(deltaTime) * glm::normalize(movementAxis));
+            m_Position += movementAxis * movementSpeed * static_cast<float>(deltaTime);
+            UpdateViewMatrix();
+        }
+        void Look(float mouse_dx, float mouse_dy)
+        {
+            yaw += mouse_dx * lookSensitivity;
+            yaw = std::fmod(yaw, 360.0f); // Limit yaw to (-360.0, 360.0f)
+            pitch += mouse_dy * lookSensitivity;
+            if (pitch > maxPitch)
+                pitch = maxPitch;
+            else if (pitch < minPitch)
+                pitch = minPitch;
+            // Update Front direction, then update view matrix
+            m_Front = FrontVectorFromYawPitch();
+            UpdateViewMatrix();
+        }
+        glm::vec3 FrontVectorFromYawPitch()
+        {
+            return glm::normalize(glm::vec3(glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch)),
+                                                     glm::sin(glm::radians(pitch)),
+                                                     glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch))));
+        }
+//        glm::vec3 FrontVectorFromYaw()
+//        {
+//            return glm::normalize(glm::vec3(glm::cos(glm::radians(yaw)),
+//                                                     0.0f ,
+//                                                     glm::sin(glm::radians(yaw))));
+//        }
+
 
     protected:
 
     private:
-        glm::mat4 m_ViewMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -100.0f));;
-        float m_FOV = 45.0f; // degrees
+        glm::vec3 m_Position = {0.0f, 0.0f, 100.0f};
+//        glm::vec3 m_Target = {0.0f, -1.0f, 0.0f};
+        float yaw = -90.0f; // 0 means +x direction, -90 means -z, see https://learnopengl.com/Getting-started/Camera
+        float pitch = 0.0f; // 0 means in perpendicular to y axis, > 0 means above xz plane
+        float minPitch = -89.0f;
+        float maxPitch = 89.0f;
+        glm::vec3 m_Front = FrontVectorFromYawPitch();
+        glm::vec3 m_Up = {0.0f, 1.0f, 0.0f}; // Used in cross product for calculating right vector in glm::lookAt (see https://learnopengl.com/Getting-started/Camera)
+        glm::mat4 m_ViewMatrix = glm::lookAt(m_Position, m_Position + m_Front, m_Up); // glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+        float m_FOV = 90.0f; // degrees
         float m_NearPlaneDistance = 0.1f;
         float m_FarPlaneDistance = 1000.0f;
+        float movementSpeed = 100.0f;
+        float lookSensitivity = 0.15f;
         glm::mat4 m_ProjectionMatrix = glm::perspective(glm::radians(m_FOV), Config::AspectRatio, m_NearPlaneDistance, m_FarPlaneDistance);
 };
 #endif // CAMERA_HPP

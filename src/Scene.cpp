@@ -44,6 +44,8 @@ Scene::Scene()
 
         if (!SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1))
             throw std::runtime_error(SDL_GetError());
+//        if (!SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24))
+//            throw std::runtime_error(SDL_GetError());
         if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3))
             throw std::runtime_error(SDL_GetError());
         if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3))
@@ -60,6 +62,9 @@ Scene::Scene()
         if (!(glContext = SDL_GL_CreateContext(window)))
             throw std::runtime_error("Failure on SDL_GL_CreateContext: " + std::string(SDL_GetError()));
 
+        if (!SDL_SetWindowRelativeMouseMode(window, true))
+            throw std::runtime_error("Failure on SDL_SetWindowRelativeMouseMode: " + std::string(SDL_GetError()));
+
         // window and glContext OK, store/own them.
         m_Window.reset(window);
         m_GLContext.reset(glContext);
@@ -68,6 +73,15 @@ Scene::Scene()
         if (version == 0)
             throw std::runtime_error("Failed to initialize GLAD");
         std::cout << "GL " << GLAD_VERSION_MAJOR(version) << "." << GLAD_VERSION_MINOR(version) << std::endl;
+//
+//        GLint depthBits = 0;
+//        glGetFramebufferAttachmentParameteriv(
+//            GL_FRAMEBUFFER,
+//            GL_DEPTH,
+//            GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
+//            &depthBits
+//        );
+//        std::cout << "Depth buffer bits: " << depthBits << std::endl;
 
         SetupOpenGL();
         SetupSprites();
@@ -167,8 +181,6 @@ void SetupOpenGL()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    glEnable(GL_DEPTH_TEST); // Enable depth testing
-
     // Matrices: create, get their uniform locations
 //    viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0f, 0.0f, -100.0f)); // Create vuiew matrix (for "camera")
     if ((viewMatrixLocation = glGetUniformLocation(shaderProgram, "view")) == -1) // Get location
@@ -184,12 +196,17 @@ void SetupOpenGL()
     if ((modelMatrixLocation = glGetUniformLocation(shaderProgram, "model")) == -1)
         throw std::runtime_error("Failed to get model matrix location in shader program.");
 
-
     // Get sprite texture uniform location
     if ((spriteTextureLocation = glGetUniformLocation(shaderProgram, "spriteTexture")) == -1)
         throw std::runtime_error("Failed to get sprite texture location in shader program.");
 
     glUniform1i(spriteTextureLocation, 0); // Set which sampler unit the uniform (sampler2D) belongs to (0 = GL_TEXTURE0)
+
+
+    glEnable(GL_DEPTH_TEST); // Enable depth testing
+
+    glEnable(GL_BLEND); // Enable blending, so can display transparency
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Set source and destination factors, see https://learnopengl.com/Advanced-OpenGL/Blending
 }
 
 
@@ -198,11 +215,11 @@ void Scene::SetupSprites()
 {
     Sprite::InitializeOpenGL();
     sprite1.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-    sprite2.SetPosition(glm::vec3(20.0f, 20.0f, -1.0f));
-    sprite3.SetPosition(glm::vec3(40.0f, 40.0f, -2.0f));
+    sprite2.SetPosition(glm::vec3(20.0f, 0.0f, -1.0f));
+    sprite3.SetPosition(glm::vec3(20.0f, 0.0f, -20.0f));
     sprite1.LoadTexture("default.png");
-    sprite2.LoadTexture("testimage.png");
-    sprite3.LoadTexture("testimage2.png");
+    sprite2.LoadTexture("alphatest.png");
+    sprite3.LoadTexture("alphatest.png");
 
 }
 
@@ -215,7 +232,7 @@ void Scene::DrawSprites(Camera& camera)
 
     // Set sprite rotations
     Uint64 ticks = SDL_GetTicks();
-    sprite1.SetRotation(ticks / 5.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+//    sprite1.SetRotation(ticks / 5.0f, glm::vec3(1.0f, 0.0f, 0.0f));
     sprite2.SetRotation(ticks / 5.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     sprite3.SetRotation(ticks / 5.0f, glm::vec3(0.5f, 0.5f, 0.0f));
 
