@@ -13,11 +13,53 @@
 //    }
 //};
 
+class GLTexture // exists so a sprite doesnt have a raw opengl texture handle (would require custom move constructor)
+{
+public:
+    GLTexture() : m_ID(0) {};
+    explicit GLTexture(GLuint tex) : m_ID(tex) {}; // https://www.geeksforgeeks.org/cpp/use-of-explicit-keyword-in-cpp/
+
+    // forbid copying (to avoid multiple deletions of a texture)
+    GLTexture(const GLTexture& other) = delete;
+    GLTexture& operator=(const GLTexture& other) = delete;
+
+    GLTexture(const GLTexture&& other) noexcept : m_ID(other.m_ID) {
+        other.m_ID = 0;
+    }
+    GLTexture& operator=(const GLTexture&& other) noexcept {
+
+    }
+
+private:
+    GLuint m_ID = 0;
+}
+
 class Sprite
 {
     public:
         Sprite();
-        virtual ~Sprite();
+        Sprite(const std::string& textureFileName, glm::vec3 position, glm::vec3 normal)
+        {
+            LoadTexture(textureFileName);
+            SetPosition(position);
+            SetNormal(normal);
+        }
+        Sprite(const std::string& textureFileName, glm::vec3 normal)
+        {
+            LoadTexture(textureFileName);
+            SetNormal(normal);
+        }
+//        // Move constructor that zeroes out m_Texture so it doesnt get deleted more than once
+//        Sprite(Sprite&& other) noexcept {
+//            m_Texture = other.m_Texture;
+//            // Copy evereything else
+//
+//            other.m_Texture = 0;
+//        }
+        virtual ~Sprite() {
+            if (m_Texture != 0)
+                glDeleteTextures(1, &m_Texture);
+        }
 
 //        void Draw(SDL_Renderer* renderer);
 
@@ -37,9 +79,42 @@ class Sprite
         Transform GetTransform() {return m_Transform;}
         void SetTransform(Transform p_Transform) {m_Transform = p_Transform; UpdateModelMatrix();}
         void SetPosition(glm::vec3 position) {m_Transform.Position = position; UpdateModelMatrix();}
+        void SetPosition(float x, float y, float z) {m_Transform.Position = glm::vec3(x,y,z); UpdateModelMatrix();}
         void SetRotation(float angleInDegrees, glm::vec3 axis) {
             m_Transform.SetRotation(angleInDegrees, axis);
             UpdateModelMatrix();
+            // Recompute normal
+            m_Normal = m_Transform.Rotation * glm::vec3(0.0f, 0.0f, 1.0f);
+        }
+
+        void SetNormal(glm::vec3 targetNormal)
+        {
+            if (glm::length(targetNormal) == 0.0f)
+                throw std::runtime_error("Sprite: trying to set normal direction to a zero vector");
+            targetNormal = glm::normalize(targetNormal);
+
+            glm::vec3 rotAxis = glm::cross(m_Normal, targetNormal);
+            float dotProduct = glm::dot(targetNormal, m_Normal);
+
+            if (glm::length(rotAxis) < 1e-6f && dotProduct < 0.0f) { // Target and current normal are ~ anti parallell
+                // WARNING: This code segment is AI generated and has not been tested
+
+                // Rotate around arbitrary axis 180 degrees, update normal and model matrix
+                glm::vec3 arbitraryAxis = (std::abs(m_Normal.x) < 0.9f) ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
+                glm::vec3 perpendicularAxis = glm::normalize(glm::cross(m_Normal, arbitraryAxis));
+                glm::quat deltaRotation = glm::angleAxis(glm::radians(180.0f), perpendicularAxis);
+                m_Transform.Rotation = deltaRotation * m_Transform.Rotation;
+                m_Normal = targetNormal;
+                UpdateModelMatrix();
+                return;
+            }
+            float rotAngle = glm::acos(glm::clamp(dotProduct, -1.0f, 1.0f)); // clamp in case floating point error causes dotProduct to leave range [-1.0f, 1.0f]. acos(dotProduct) works because targetNormal and m_Normal are normalized. dotProduct = cos(rotAngle) * len1 * len2
+            // Rotate, update normal and model matrix
+            glm::quat deltaRotation = glm::angleAxis(rotAngle, glm::normalize(rotAxis));
+            m_Transform.Rotation = deltaRotation * m_Transform.Rotation;
+            m_Normal = targetNormal;
+            UpdateModelMatrix();
+
         }
 
         static constexpr float sizeScaleFactor = 0.1f; // Used in UpdateModelMatrix to determine how the sprite's width and height affects scale.
@@ -69,7 +144,8 @@ class Sprite
                                                                         -0.5f, -0.5f, 0.0f,    0.0f, 0.0f, // bottom left
                                                                         0.5f, -0.5f, 0.0f,     1.0f, 0.0f, // bottom right
                                                                         0.5f, 0.5f, 0.0f,       1.0f, 1.0f}; // top right
-        static inline const std::array<GLuint, nrOfVertexIndices> vertexIndices = {0, 1, 2, 2, 3, 0};
+        static inlsine const std::array<GLuint, nrOfVertexIndices> vertexIndices = {0, 1, 2, 2, 3, 0};
+        glm::vec3 m_Normal = {0.0f, 0.0f, 1.0f};
 
         static inline unsigned int nrOfSprites = 0;
         static const int MAX_NR_OF_SPRITES = 1000;

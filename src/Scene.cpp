@@ -209,17 +209,45 @@ void SetupOpenGL()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Set source and destination factors, see https://learnopengl.com/Advanced-OpenGL/Blending
 }
 
-
+std::array<Sprite, 6> CreateBox(const std::string& texturePath, glm::vec3 centerPosition)
+{
+    Sprite back(texturePath, glm::vec3(0.0f, 0.0f, -1.0f));
+    float width = back.width;
+    float height = back.height;
+    back.SetPosition(centerPosition + glm::vec3(0.0f, 0.0f, -0.5f * height));
+    Sprite bottom(texturePath, glm::vec3(0.0f, -1.0f, 0.0f));
+    bottom.SetPosition(centerPosition + glm::vec3(0.0f, -0.5f * height, 0.0f));
+    Sprite top(texturePath, glm::vec3(0.0f, 1.0f, 0.0f));
+    top.SetPosition(centerPosition + glm::vec3(0.0f, 0.5f * height, 0.0f));
+    Sprite left(texturePath, glm::vec3(-1.0f, 0.0f, 0.0f));
+    left.SetPosition(centerPosition + glm::vec3(-0.5f * width, 0.0f, 0.0f));
+    Sprite right(texturePath, glm::vec3(1.0f, 0.0f, 0.0f));
+    right.SetPosition(centerPosition + glm::vec3(0.5f * width, 0.0f, 0.0f));
+    Sprite front(texturePath, glm::vec3(0.0f, 0.0f, 1.0f));
+    front.SetPosition(centerPosition + glm::vec3(0.0f, 0.0f, 0.5f * height));
+    return {back, bottom, top, left, right, front};
+}
 
 void Scene::SetupSprites()
 {
     Sprite::InitializeOpenGL();
-    sprite1.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-    sprite2.SetPosition(glm::vec3(20.0f, 0.0f, -1.0f));
-    sprite3.SetPosition(glm::vec3(20.0f, 0.0f, -20.0f));
-    sprite1.LoadTexture("default.png");
-    sprite2.LoadTexture("alphatest.png");
-    sprite3.LoadTexture("alphatest.png");
+
+    std::array<Sprite, 6> box = CreateBox("cubeside.png", glm::vec3(0.0f, 0.0f, -50.0f));
+
+    for (Sprite& boxSprite : box) {
+        m_Sprites.push_back(std::make_unique<Sprite>(std::move(boxSprite)));
+    }
+
+//    std::unique_ptr<Sprite> sprite1 = std::make_unique<Sprite>();
+//    sprite1->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+//    sprite1->LoadTexture("default.png");
+//    m_Sprites.push_back(std::move(sprite1));
+//    sprite1.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+//    sprite2.SetPosition(glm::vec3(20.0f, 0.0f, -1.0f));
+//    sprite3.SetPosition(glm::vec3(20.0f, 0.0f, -20.0f));
+//    sprite1.LoadTexture("default.png");
+//    sprite2.LoadTexture("alphatest.png");
+//    sprite3.LoadTexture("alphatest.png");
 
 }
 
@@ -231,33 +259,39 @@ void Scene::DrawSprites(Camera& camera)
     glBindVertexArray(Sprite::VAO);
 
     // Set sprite rotations
-    Uint64 ticks = SDL_GetTicks();
+//    Uint64 ticks = SDL_GetTicks();
 //    sprite1.SetRotation(ticks / 5.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-    sprite2.SetRotation(ticks / 5.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    sprite3.SetRotation(ticks / 5.0f, glm::vec3(0.5f, 0.5f, 0.0f));
+//    sprite2.SetRotation(ticks / 5.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+//    sprite3.SetRotation(ticks / 5.0f, glm::vec3(0.5f, 0.5f, 0.0f));
 
     glActiveTexture(GL_TEXTURE0); // Set which texture unit to bind textures to
 
     // Send camera matrices to shader program's uniforms
-//    glm::mat4 cameraViewMatrix = camera.GetViewMatrix();
-//    glm::mat4 cameraProjectionMatrix = camera.GetProjectionMatrix();
     glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix())); // View matrix
     glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(camera.GetProjectionMatrix())); // Perspective matrix
 
     // Sprite 1
-    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite1.GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
-    glBindTexture(GL_TEXTURE_2D, sprite1.m_Texture);
-    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
+    for (std::unique_ptr<Sprite>& spriteUniquePtr : m_Sprites)
+    {
+        Sprite* sprite = spriteUniquePtr.get();
+        glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite->GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
+        glBindTexture(GL_TEXTURE_2D, sprite->m_Texture);
+        glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
+    }
 
-    // Sprite 2
-    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite2.GetModelMatrix()));
-    glBindTexture(GL_TEXTURE_2D, sprite2.m_Texture);
-    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
-
-    // Sprite 3
-    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite3.GetModelMatrix()));
-    glBindTexture(GL_TEXTURE_2D, sprite3.m_Texture);
-    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
+//    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite1.GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
+//    glBindTexture(GL_TEXTURE_2D, sprite1.m_Texture);
+//    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
+//
+//    // Sprite 2
+//    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite2.GetModelMatrix()));
+//    glBindTexture(GL_TEXTURE_2D, sprite2.m_Texture);
+//    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
+//
+//    // Sprite 3
+//    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite3.GetModelMatrix()));
+//    glBindTexture(GL_TEXTURE_2D, sprite3.m_Texture);
+//    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
 
 }
 

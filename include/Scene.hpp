@@ -45,10 +45,11 @@ class Scene
 //        std::unique_ptr<SDL_Renderer, RendererDeleter> m_Renderer;
         std::unique_ptr<SDL_GLContextState, GLContextDeleter> m_GLContext; // SDL_GLContextState == std::remove_pointer_t<SDL_GLContext>
         bool m_IsValid = true;
-
-        Sprite sprite1;
-        Sprite sprite2;
-        Sprite sprite3;
+//
+//        Sprite sprite1;
+//        Sprite sprite2;
+//        Sprite sprite3;
+        std::vector<std::unique_ptr<Sprite>> m_Sprites;
         void SetupSprites();
         void DrawSprites(Camera& camera);
 };
