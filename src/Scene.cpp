@@ -44,8 +44,8 @@ Scene::Scene()
 
         if (!SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1))
             throw std::runtime_error(SDL_GetError());
-//        if (!SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24))
-//            throw std::runtime_error(SDL_GetError());
+        if (!SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24))
+            throw std::runtime_error(SDL_GetError());
         if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3))
             throw std::runtime_error(SDL_GetError());
         if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3))
@@ -53,8 +53,6 @@ Scene::Scene()
         if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE))
             throw std::runtime_error(SDL_GetError());
 
-//        if (!SDL_CreateWindowAndRenderer(Config::WindowTitle, Config::WindowWidth, Config::WindowHeight, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL, &window, &renderer))
-//            throw std::runtime_error("Failure on SDL_CreateWindowAndRenderer: " + std::string(SDL_GetError()));
         if (!(window = SDL_CreateWindow(Config::WindowTitle, Config::WindowWidth, Config::WindowHeight, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL)))
             throw std::runtime_error("Failure on SDL_CreateWindow: " + std::string(SDL_GetError()));
 
@@ -73,15 +71,15 @@ Scene::Scene()
         if (version == 0)
             throw std::runtime_error("Failed to initialize GLAD");
         std::cout << "GL " << GLAD_VERSION_MAJOR(version) << "." << GLAD_VERSION_MINOR(version) << std::endl;
-//
-//        GLint depthBits = 0;
-//        glGetFramebufferAttachmentParameteriv(
-//            GL_FRAMEBUFFER,
-//            GL_DEPTH,
-//            GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
-//            &depthBits
-//        );
-//        std::cout << "Depth buffer bits: " << depthBits << std::endl;
+
+        GLint depthBits = 0;
+        glGetFramebufferAttachmentParameteriv(
+            GL_FRAMEBUFFER,
+            GL_DEPTH,
+            GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
+            &depthBits
+        );
+        std::cout << "Depth buffer bits: " << depthBits << std::endl;
 
         SetupOpenGL();
         SetupSprites();
@@ -162,7 +160,6 @@ void SetupOpenGL()
     glClearColor(0.25f, 0.25f, 0.4f, 1.0f); // Set background color
 
     // Create shaders
-
     GLuint vertexShader = CreateShader(GL_VERTEX_SHADER, std::string(SDL_GetBasePath()) + "../../src/default.vert");
     GLuint fragmentShader = CreateShader(GL_FRAGMENT_SHADER, std::string(SDL_GetBasePath()) + "../../src/default.frag");
 
@@ -175,16 +172,11 @@ void SetupOpenGL()
     glDeleteShader(fragmentShader);
 
     // Matrices: create, get their uniform locations
-//    viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0f, 0.0f, -100.0f)); // Create vuiew matrix (for "camera")
     if ((viewMatrixLocation = glGetUniformLocation(shaderProgram, "view")) == -1) // Get location
         throw std::runtime_error("Failed to get view matrix location in shader program.");
-//    glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix)); // Send it to shader program uniform (do it here, once, since will never change)
 
-//    float fovDegrees = 90.0f;
-//    projectionMatrix = glm::perspective(glm::radians(fovDegrees), static_cast<float>(Config::WindowWidth) / Config::WindowHeight, 0.1f, 1000.0f); // For clipping and depth
     if ((projectionMatrixLocation = glGetUniformLocation(shaderProgram, "projection")) == -1)
         throw std::runtime_error("Failed to get projection matrix location in shader program.");
-//    glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
     if ((modelMatrixLocation = glGetUniformLocation(shaderProgram, "model")) == -1)
         throw std::runtime_error("Failed to get model matrix location in shader program.");
@@ -228,7 +220,7 @@ void Scene::CreateBox(const std::string& texturePath, glm::vec3 centerPosition)
 
 void Scene::SetupSprites()
 {
-    Sprite::InitializeOpenGL();
+//    Sprite::InitializeOpenGL();
 
     CreateBox("alphatest.png", glm::vec3(0.0f, 0.0f, -50.0f));
     CreateBox("cubeside.png", glm::vec3(-50.0f, 0.0f, -50.0f));
@@ -246,7 +238,7 @@ void Scene::DrawSprites(Camera& camera)
 {
     // Begin drawing sprites
     glUseProgram(shaderProgram);
-    glBindVertexArray(Sprite::VAO);
+    glBindVertexArray(Sprite::GetMesh().VAO);
 
     glActiveTexture(GL_TEXTURE0); // Set which texture unit to bind textures to
 
@@ -269,7 +261,7 @@ void Scene::DrawSprites(Camera& camera)
     for (Sprite* sprite : spritesSortedByDistance) {
         glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite->GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
         glBindTexture(GL_TEXTURE_2D, sprite->m_Texture.GetID());
-        glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, Sprite::GetMesh().nrOfVertexIndices, GL_UNSIGNED_INT, 0);
     }
 }
 
@@ -305,7 +297,8 @@ void Scene::ProcessInputEvent(SDL_Event* event)
 
 Scene::~Scene()
 {
-    glDeleteVertexArrays(1, &Sprite::VAO);
-    glDeleteBuffers(1, &Sprite::VBO);
+//    glDeleteVertexArrays(1, &Sprite::VAO);
+//    glDeleteBuffers(1, &Sprite::VBO);
+    Sprite::GetMesh().Reset();
     glDeleteProgram(shaderProgram);
 }

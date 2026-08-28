@@ -6,6 +6,71 @@
 #include <vector>
 #include <stdexcept>
 
+/*
+✔ A Mesh class stores geometry
+
+This includes:
+
+    VAO
+
+    VBO
+
+    EBO
+
+    index count
+
+    vertex layout
+
+    draw mode
+
+A mesh represents what you draw.
+✔ A Shader class stores the shader program
+
+This includes:
+
+    program ID
+
+    uniform locations
+
+    uniform setters
+
+    binding logic
+
+    shader compilation
+
+    shader linking
+
+A shader represents how you draw.
+✔ A Material class binds a shader + textures + parameters
+
+This includes:
+
+    shader program
+
+    textures
+
+    colors
+
+    uniform values
+
+    blending mode
+
+A material represents with what settings you draw.
+✔ A Sprite or LightSource stores transform + material + mesh
+
+This includes:
+
+    model matrix
+
+    position/rotation/scale
+
+    pointer to mesh
+
+    pointer to material
+
+This represents an instance of something drawable.
+*/
+
 
 struct FullVertexAttribute
 {
@@ -30,6 +95,7 @@ struct VertexAttribute
 class Mesh
 {
     public:
+        Mesh() = default;
         Mesh(const std::vector<float>& vertices, const std::vector<GLuint>& vertexIndices, std::vector<VertexAttribute> vertexAttributes)
         {
             // Create and bind buffers
@@ -43,7 +109,7 @@ class Mesh
 
             // Add the vertex and indices data to the buffers
             glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertexIndices.size() * sizeof(float), vertexIndices.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertexIndices.size() * sizeof(GLuint), vertexIndices.data(), GL_STATIC_DRAW);
 
             // Set vertex attributes:
             // ----------------------
@@ -85,20 +151,46 @@ class Mesh
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
-        ~Mesh()
-        {
+        bool HasReset() const {return m_Reset;}
+        void Reset() {
             // Delete buffers
             glDeleteBuffers(1, &VBO);
-            glDeleteBuffers(1, &VAO);
+            glDeleteVertexArrays(1, &VAO);
             glDeleteBuffers(1, &EBO);
+            m_Reset = true;
+        }
+        ~Mesh()
+        {
+            //Reset(); // WARNING: SHOULD PROBABLY UNCOMMENT THIS (but then it will be called after opengl has closed because Sprite has a static Mesh)
         }
 
         // Forbid copying (to avoid multiple deletions of buffers)
         Mesh(const Mesh& other) = delete;
         Mesh& operator=(const Mesh& other) = delete;
 
-        Mesh(Mesh&& other) = default;
-        Mesh& operator=(Mesh&& other) = default;
+        Mesh(Mesh&& other) noexcept {
+            // Take over other's buffers
+            VBO = other.VBO;
+            VAO = other.VAO;
+            EBO = other.EBO;
+            nrOfVertexIndices = other.nrOfVertexIndices;
+            nrOfVertices = other.nrOfVertices;
+            other.VBO = other.VAO = other.EBO = 0; // To prevent deletioin of buffers (NOT RELEVANT NOW THAT WE DONT RESET IN DESTRUCTOR?)
+        };
+        Mesh& operator=(Mesh&& other) noexcept {
+            if (this != &other) {
+                Reset(); // Delete current buffers
+                m_Reset = false;
+                // Take over other's buffers
+                VBO = other.VBO;
+                VAO = other.VAO;
+                EBO = other.EBO;
+                nrOfVertexIndices = other.nrOfVertexIndices;
+                nrOfVertices = other.nrOfVertices;
+                other.VBO = other.VAO = other.EBO = 0; // To prevent deletioin of buffers
+            }
+            return *this;
+        };
 
         GLuint VBO = 0; // vertex buffer object
         GLuint VAO = 0; // vertex array object
@@ -107,8 +199,7 @@ class Mesh
         unsigned int nrOfVertexIndices = 0; // -- || -- when not using an element buffer object
 
     protected:
-
-    private:
+        bool m_Reset = false;
 };
 
 #endif // MESH_HPP
