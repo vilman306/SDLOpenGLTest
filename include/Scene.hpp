@@ -50,6 +50,7 @@ class Scene
 //        Sprite sprite2;
 //        Sprite sprite3;
         std::vector<std::unique_ptr<Sprite>> m_Sprites;
+
         void SetupSprites();
         void DrawSprites(Camera& camera);
 };

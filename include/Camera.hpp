@@ -84,6 +84,7 @@ class Camera
             m_Position = pos;
             UpdateViewMatrix();
         }
+        glm::vec3 GetPosition() {return m_Position;}
         void UpdateViewMatrix()
         {
             m_ViewMatrix = glm::lookAt(m_Position, m_Position + m_Front, m_Up);

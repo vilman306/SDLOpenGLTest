@@ -33,7 +33,7 @@ class GLTexture // exists so a sprite doesnt have a raw opengl texture handle (w
             Reset();
         }
 
-        GLuint const GetID() { return m_ID; }
+        GLuint GetID() const { return m_ID; }
 
     private:
         void Reset() {
@@ -93,6 +93,7 @@ class Sprite
             // Recompute normal
             m_Normal = m_Transform.Rotation * glm::vec3(0.0f, 0.0f, 1.0f);
         }
+        glm::vec3 GetPosition() const {return m_Transform.Position;}
 
         void SetNormal(glm::vec3 targetNormal)
         {

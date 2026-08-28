@@ -232,7 +232,7 @@ void Scene::SetupSprites()
 {
     Sprite::InitializeOpenGL();
 
-    std::array<Sprite, 6> box = CreateBox("cubeside.png", glm::vec3(0.0f, 0.0f, -50.0f));
+    std::array<Sprite, 6> box = CreateBox("alphatest.png", glm::vec3(0.0f, 0.0f, -50.0f));
 
     for (Sprite& boxSprite : box) {
         m_Sprites.push_back(std::make_unique<Sprite>(std::move(boxSprite)));
@@ -252,6 +252,7 @@ void Scene::SetupSprites()
 }
 
 #include <SDL3/SDL_time.h>
+#include <algorithm>
 void Scene::DrawSprites(Camera& camera)
 {
     // Begin drawing sprites
@@ -270,13 +271,33 @@ void Scene::DrawSprites(Camera& camera)
     glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix())); // View matrix
     glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(camera.GetProjectionMatrix())); // Perspective matrix
 
-    for (std::unique_ptr<Sprite>& spriteUniquePtr : m_Sprites)
-    {
-        Sprite* spritePtr = spriteUniquePtr.get();
-        glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(spritePtr->GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
-        glBindTexture(GL_TEXTURE_2D, spritePtr->m_Texture.GetID());
+    // Sort sprites based on distance (needed for drawing transparent objects correclty: https://learnopengl.com/Advanced-OpenGL/Blending)
+    std::vector<Sprite*> spritesSortedByDistance;
+    for (std::unique_ptr<Sprite>& sprite: m_Sprites)
+        spritesSortedByDistance.push_back(sprite.get());
+
+    std::sort( spritesSortedByDistance.begin(), spritesSortedByDistance.end(),
+            [&camera](const Sprite* a, const Sprite* b) {
+                float aToCameraDist = glm::length(camera.GetPosition() - a->GetPosition());
+                float bToCameraDist = glm::length(camera.GetPosition() - b->GetPosition());
+                return aToCameraDist > bToCameraDist; // Sort in descending order (want to draw objects furthest away first)
+            } );
+
+    for (Sprite* sprite : spritesSortedByDistance) {
+        glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite->GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
+        glBindTexture(GL_TEXTURE_2D, sprite->m_Texture.GetID());
         glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
     }
+
+
+
+//    for (std::unique_ptr<Sprite>& spriteUniquePtr : m_Sprites)
+//    {
+//        Sprite* spritePtr = spriteUniquePtr.get();
+//        glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(spritePtr->GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
+//        glBindTexture(GL_TEXTURE_2D, spritePtr->m_Texture.GetID());
+//        glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
+//    }
 }
 
 
