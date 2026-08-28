@@ -146,7 +146,7 @@ class Camera
         glm::vec3 m_Up = {0.0f, 1.0f, 0.0f}; // Used in cross product for calculating right vector in glm::lookAt (see https://learnopengl.com/Getting-started/Camera)
         glm::mat4 m_ViewMatrix = glm::lookAt(m_Position, m_Position + m_Front, m_Up); // glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
         float m_FOV = 90.0f; // degrees
-        float m_NearPlaneDistance = 0.1f;
+        float m_NearPlaneDistance = 0.5f;
         float m_FarPlaneDistance = 1000.0f;
         float movementSpeed = 100.0f;
         float lookSensitivity = 0.15f;

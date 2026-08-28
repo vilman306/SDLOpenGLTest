@@ -196,6 +196,7 @@ void SetupOpenGL()
     if ((modelMatrixLocation = glGetUniformLocation(shaderProgram, "model")) == -1)
         throw std::runtime_error("Failed to get model matrix location in shader program.");
 
+
     // Get sprite texture uniform location
     if ((spriteTextureLocation = glGetUniformLocation(shaderProgram, "spriteTexture")) == -1)
         throw std::runtime_error("Failed to get sprite texture location in shader program.");
@@ -205,11 +206,12 @@ void SetupOpenGL()
 
     glEnable(GL_DEPTH_TEST); // Enable depth testing
 
+
     glEnable(GL_BLEND); // Enable blending, so can display transparency
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Set source and destination factors, see https://learnopengl.com/Advanced-OpenGL/Blending
 }
 
-std::array<Sprite, 6> CreateBox(const std::string& texturePath, glm::vec3 centerPosition)
+void Scene::CreateBox(const std::string& texturePath, glm::vec3 centerPosition)
 {
     Sprite back(texturePath, glm::vec3(0.0f, 0.0f, -1.0f));
     float width = back.width * Sprite::sizeScaleFactor;
@@ -225,29 +227,23 @@ std::array<Sprite, 6> CreateBox(const std::string& texturePath, glm::vec3 center
     right.SetPosition(centerPosition + glm::vec3(0.5f * width, 0.0f, 0.0f));
     Sprite front(texturePath, glm::vec3(0.0f, 0.0f, 1.0f));
     front.SetPosition(centerPosition + glm::vec3(0.0f, 0.0f, 0.5f * height));
-    return {std::move(back), std::move(bottom), std::move(top), std::move(left), std::move(right), std::move(front)};
+    std::array<Sprite, 6> box = {std::move(back), std::move(bottom), std::move(top), std::move(left), std::move(right), std::move(front)};
+    for (Sprite& boxSprite : box) {
+        m_Sprites.push_back(std::make_unique<Sprite>(std::move(boxSprite)));
+    }
 }
 
 void Scene::SetupSprites()
 {
     Sprite::InitializeOpenGL();
 
-    std::array<Sprite, 6> box = CreateBox("alphatest.png", glm::vec3(0.0f, 0.0f, -50.0f));
+    CreateBox("alphatest.png", glm::vec3(0.0f, 0.0f, -50.0f));
+    CreateBox("cubeside.png", glm::vec3(-50.0f, 0.0f, -50.0f));
+    CreateBox("default.png", glm::vec3(50.0f, 0.0f, -50.0f));
+    Sprite ground("ground.png", glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, -50.0f, 0.0f), glm::vec3(40.0f, 40.0f, 1.0f));
+    m_Sprites.push_back(std::make_unique<Sprite>(std::move(ground)));
+//    CreateBox("lightsource.png", glm::vec3(0.0f, 30.0f, 25.0f));
 
-    for (Sprite& boxSprite : box) {
-        m_Sprites.push_back(std::make_unique<Sprite>(std::move(boxSprite)));
-    }
-
-//    std::unique_ptr<Sprite> sprite1 = std::make_unique<Sprite>();
-//    sprite1->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-//    sprite1->LoadTexture("default.png");
-//    m_Sprites.push_back(std::move(sprite1));
-//    sprite1.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-//    sprite2.SetPosition(glm::vec3(20.0f, 0.0f, -1.0f));
-//    sprite3.SetPosition(glm::vec3(20.0f, 0.0f, -20.0f));
-//    sprite1.LoadTexture("default.png");
-//    sprite2.LoadTexture("alphatest.png");
-//    sprite3.LoadTexture("alphatest.png");
 
 }
 
@@ -258,12 +254,6 @@ void Scene::DrawSprites(Camera& camera)
     // Begin drawing sprites
     glUseProgram(shaderProgram);
     glBindVertexArray(Sprite::VAO);
-
-    // Set sprite rotations
-//    Uint64 ticks = SDL_GetTicks();
-//    sprite1.SetRotation(ticks / 5.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-//    sprite2.SetRotation(ticks / 5.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-//    sprite3.SetRotation(ticks / 5.0f, glm::vec3(0.5f, 0.5f, 0.0f));
 
     glActiveTexture(GL_TEXTURE0); // Set which texture unit to bind textures to
 
@@ -288,18 +278,7 @@ void Scene::DrawSprites(Camera& camera)
         glBindTexture(GL_TEXTURE_2D, sprite->m_Texture.GetID());
         glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
     }
-
-
-
-//    for (std::unique_ptr<Sprite>& spriteUniquePtr : m_Sprites)
-//    {
-//        Sprite* spritePtr = spriteUniquePtr.get();
-//        glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(spritePtr->GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
-//        glBindTexture(GL_TEXTURE_2D, spritePtr->m_Texture.GetID());
-//        glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
-//    }
 }
-
 
 void Scene::Update(double deltaTime, Camera& camera)
 {

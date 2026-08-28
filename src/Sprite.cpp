@@ -9,30 +9,7 @@ Sprite::Sprite()
     if (nrOfSprites > MAX_NR_OF_SPRITES)
         throw std::runtime_error(std::string("There are more sprites than max limit: ") + std::to_string(MAX_NR_OF_SPRITES) + ".");
 
-
-    // Change transform scale to match width and height
-
-    // local axes
-//    glm::vec3 rightDir = {1.0f, 0.0f, 0.0f};
-//    glm::vec3 upDir = {0.0f, 1.0f, 0.0f};
-//
-//    // vertex positions in local coordinates
-//    glm::vec3 topLeft = 0.5f * height * upDir - 0.5f * width * rightDir;
-//    glm::vec3 topRight = 0.5f * height * upDir + 0.5f * width* rightDir;
-//    glm::vec3 bottomLeft = -0.5f * height * upDir - 0.5f * width * rightDir;
-//    glm::vec3 bottomRight = -0.5f * height * upDir + 0.5f * width * rightDir;
-//
-//    // vertices array in local coordinates
-//    vertices = {topLeft, bottomLeft, bottomRight, topRight};
-//    vertexIndices = {0, 1, 2, 2, 3, 4};
-
-//    UpdateVBO();
 }
-
-//Sprite::~Sprite()
-//{
-//    //dtor
-//}
 
 void Sprite::InitializeOpenGL()
 {
@@ -68,56 +45,6 @@ void Sprite::InitializeOpenGL()
 
     hasInitializedStatics = true;
 }
-//
-//void Sprite::UploadVerticesToVBO()
-//{
-//    if (!hasInitializedStatics)
-//        throw std::runtime_error("Trying to upload vertices to VBO before VBO has been created (Sprite::InitializeOpenGL() has not been called.");
-//
-//    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-//                                                                    // does this work??
-////    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
-//         // does this work??
-//    glBufferSubData(GL_ARRAY_BUFFER, spriteNr * vertices.size() * sizeof(glm::vec3), vertices.size() * sizeof(glm::vec3), vertices.data());
-//}
-
-//void Sprite::UpdateVBO()
-//{
-    // update the model matrix (which transforms from local space to world space)
-    // instead of updating each vertex in the vbo
-
-
-//    // local axes
-//    glm::vec3 rightDir = {1.0f, 0.0f, 0.0f};
-//    glm::vec3 upDir = {0.0f, 1.0f, 0.0f};
-//
-//    // vertex positions in local coordinates
-//    glm::vec3 topLeft = 0.5f * height * upDir - 0.5f * width * rightDir;
-//    glm::vec3 topRight = 0.5f * height * upDir + 0.5f * width* rightDir;
-//    glm::vec3 bottomLeft = -0.5f * height * upDir - 0.5f * width * rightDir;
-//    glm::vec3 bottomRight = -0.5f * height * upDir + 0.5f * width * rightDir;
-//
-//    // vertices array in local coordinates
-//    vertices = {topLeft, bottomLeft, bottomRight,
-//                bottomLeft, bottomRight, topRight};
-//
-//    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-//         // does this work??
-//    glBufferSubData(GL_ARRAY_BUFFER, spriteNr * vertices.size() * sizeof(glm::vec3), vertices.size() * sizeof(glm::vec3), vertices.data());
-//}
-
-//void Sprite::Draw(SDL_Renderer* renderer)
-//{
-//    if (!m_Texture) {
-//        std::cout << "Trying to render sprite with no texture." << std::endl;
-//    }
-//    SDL_FRect destinationRect;
-//    destinationRect.x = position_x;
-//    destinationRect.y = position_y;
-//    destinationRect.w = width;
-//    destinationRect.h = height;
-//    SDL_RenderTexture(renderer, m_Texture.get(), nullptr, &destinationRect);
-//}
 
 GLenum GetColorFormat(int nrOfColorChannels)
 {

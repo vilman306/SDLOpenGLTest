@@ -49,15 +49,23 @@ class Sprite
 {
     public:
         Sprite();
-        Sprite(const std::string& textureFileName, glm::vec3 position, glm::vec3 normal)
+
+        Sprite(const std::string& textureFileName, glm::vec3 normal)
+        {
+            LoadTexture(textureFileName);
+            SetNormal(normal);
+        }
+        Sprite(const std::string& textureFileName, glm::vec3 normal, glm::vec3 position)
         {
             LoadTexture(textureFileName);
             SetPosition(position);
             SetNormal(normal);
         }
-        Sprite(const std::string& textureFileName, glm::vec3 normal)
+        Sprite(const std::string& textureFileName, glm::vec3 normal, glm::vec3 position, glm::vec3 scale)
         {
             LoadTexture(textureFileName);
+            SetPosition(position);
+            SetScale(scale);
             SetNormal(normal);
         }
 
@@ -85,6 +93,7 @@ class Sprite
 
         Transform GetTransform() {return m_Transform;}
         void SetTransform(Transform p_Transform) {m_Transform = p_Transform; UpdateModelMatrix();}
+        void SetScale(glm::vec3 scale) {m_Transform.Scale = scale; UpdateModelMatrix();}
         void SetPosition(glm::vec3 position) {m_Transform.Position = position; UpdateModelMatrix();}
         void SetPosition(float x, float y, float z) {m_Transform.Position = glm::vec3(x,y,z); UpdateModelMatrix();}
         void SetRotation(float angleInDegrees, glm::vec3 axis) {
