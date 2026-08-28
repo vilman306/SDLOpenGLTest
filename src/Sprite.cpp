@@ -6,6 +6,8 @@
 Sprite::Sprite()
 {
     nrOfSprites++;
+    if (nrOfSprites > MAX_NR_OF_SPRITES)
+        throw std::runtime_error(std::string("There are more sprites than max limit: ") + std::to_string(MAX_NR_OF_SPRITES) + ".");
 
 
     // Change transform scale to match width and height
@@ -27,10 +29,10 @@ Sprite::Sprite()
 //    UpdateVBO();
 }
 
-Sprite::~Sprite()
-{
-    //dtor
-}
+//Sprite::~Sprite()
+//{
+//    //dtor
+//}
 
 void Sprite::InitializeOpenGL()
 {
@@ -133,33 +135,21 @@ GLenum GetColorFormat(int nrOfColorChannels)
 void Sprite::LoadTexture(const std::string& fileName)
 {
     std::string fullPath = std::string(SDL_GetBasePath()) + "/textures/" + fileName;
-//    SDL_Surface* surface = SDL_LoadPNG(fullPath.c_str());
-//    if (!surface) {
-//        std::cout << "ERROR: failed to create surface from '" << fullPath << "'." << std::endl;
-//        return;
-//    }
-//    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-//    if (!texture) {
-//        std::cout << "ERROR: failde to create texture from surface (of '" << fullPath << "')." << std::endl;
-//        return;
-//    }
-//    m_Texture.reset(texture);
-//    width = surface->w;
-//    height = surface->h;
-//
-//    SDL_DestroySurface(surface);
 
     // Load & store image data from path
-    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture
     int nrOfColorChannels;
     unsigned char* data = stbi_load(fullPath.c_str(), &width, &height, &nrOfColorChannels, 0);
     if (!data)
         throw std::runtime_error("Failed to load texture data from '" + fullPath + "'.");
 
     // (create and) bind texture
-    if (m_Texture == 0)
-        glGenTextures(1, &m_Texture);
-    glBindTexture(GL_TEXTURE_2D, m_Texture);
+    GLuint textureID = 0;
+    if (m_Texture.GetID() == 0) {
+        glGenTextures(1, &textureID);
+        m_Texture = GLTexture(textureID);
+    }
+    glBindTexture(GL_TEXTURE_2D, m_Texture.GetID());
 
     // set texture wrapping and filtering options
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);

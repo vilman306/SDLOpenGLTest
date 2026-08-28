@@ -41,7 +41,8 @@ class Camera
 //        }
         void Update(CameraInputState input, double deltaTime)
         {
-            Move(glm::vec2(input.MoveRight, input.MoveForward), static_cast<float>(deltaTime));
+            MoveHorizontally(glm::vec2(input.MoveRight, input.MoveForward), static_cast<float>(deltaTime));
+            MoveUp(input.MoveUp, deltaTime);
             Look(input.LookDeltaX, input.LookDeltaY);
         }
         void UpdateProjectionMatrix()
@@ -91,14 +92,18 @@ class Camera
         {
             return glm::normalize(glm::cross(m_Front, m_Up));
         }
-        void Move(glm::vec2 inputXZ, double deltaTime)
+        void MoveHorizontally(glm::vec2 inputXZ, double deltaTime)
         {
             if (glm::length(inputXZ) == 0.0f)
                 return;
-            glm::vec3 movementAxis = glm::normalize(inputXZ.y * glm::vec3(m_Front.x, 0.0f, m_Front.z) + inputXZ.x * GetRightDir()); //glm::vec3(inputXZ.x, 0, inputXZ.y);
-//            m_ViewMatrix = glm::translate(m_ViewMatrix, -movementSpeed * static_cast<float>(deltaTime) * glm::normalize(movementAxis));
+            glm::vec3 movementAxis = glm::normalize(inputXZ.y * glm::vec3(m_Front.x, 0.0f, m_Front.z) + inputXZ.x * GetRightDir()); // "FPS" movement
+//            glm::vec3 movementAxis = glm::normalize(inputXZ.y * m_Front + inputXZ.x * GetRightDir()); // "Fly" movement
             m_Position += movementAxis * movementSpeed * static_cast<float>(deltaTime);
             UpdateViewMatrix();
+        }
+        void MoveUp(float value, double deltaTime)
+        {
+            m_Position += value * m_Up * movementSpeed * static_cast<float>(deltaTime);
         }
         void Look(float mouse_dx, float mouse_dy)
         {

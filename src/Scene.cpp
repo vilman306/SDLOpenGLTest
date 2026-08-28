@@ -212,8 +212,8 @@ void SetupOpenGL()
 std::array<Sprite, 6> CreateBox(const std::string& texturePath, glm::vec3 centerPosition)
 {
     Sprite back(texturePath, glm::vec3(0.0f, 0.0f, -1.0f));
-    float width = back.width;
-    float height = back.height;
+    float width = back.width * Sprite::sizeScaleFactor;
+    float height = back.height * Sprite::sizeScaleFactor;
     back.SetPosition(centerPosition + glm::vec3(0.0f, 0.0f, -0.5f * height));
     Sprite bottom(texturePath, glm::vec3(0.0f, -1.0f, 0.0f));
     bottom.SetPosition(centerPosition + glm::vec3(0.0f, -0.5f * height, 0.0f));
@@ -225,7 +225,7 @@ std::array<Sprite, 6> CreateBox(const std::string& texturePath, glm::vec3 center
     right.SetPosition(centerPosition + glm::vec3(0.5f * width, 0.0f, 0.0f));
     Sprite front(texturePath, glm::vec3(0.0f, 0.0f, 1.0f));
     front.SetPosition(centerPosition + glm::vec3(0.0f, 0.0f, 0.5f * height));
-    return {back, bottom, top, left, right, front};
+    return {std::move(back), std::move(bottom), std::move(top), std::move(left), std::move(right), std::move(front)};
 }
 
 void Scene::SetupSprites()
@@ -270,29 +270,13 @@ void Scene::DrawSprites(Camera& camera)
     glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix())); // View matrix
     glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(camera.GetProjectionMatrix())); // Perspective matrix
 
-    // Sprite 1
     for (std::unique_ptr<Sprite>& spriteUniquePtr : m_Sprites)
     {
-        Sprite* sprite = spriteUniquePtr.get();
-        glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite->GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
-        glBindTexture(GL_TEXTURE_2D, sprite->m_Texture);
+        Sprite* spritePtr = spriteUniquePtr.get();
+        glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(spritePtr->GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
+        glBindTexture(GL_TEXTURE_2D, spritePtr->m_Texture.GetID());
         glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
     }
-
-//    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite1.GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
-//    glBindTexture(GL_TEXTURE_2D, sprite1.m_Texture);
-//    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
-//
-//    // Sprite 2
-//    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite2.GetModelMatrix()));
-//    glBindTexture(GL_TEXTURE_2D, sprite2.m_Texture);
-//    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
-//
-//    // Sprite 3
-//    glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite3.GetModelMatrix()));
-//    glBindTexture(GL_TEXTURE_2D, sprite3.m_Texture);
-//    glDrawElements(GL_TRIANGLES, Sprite::nrOfVertexIndices, GL_UNSIGNED_INT, 0);
-
 }
 
 

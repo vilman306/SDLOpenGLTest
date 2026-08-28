@@ -6,33 +6,44 @@
 #include "Transform.hpp"
 #include <glad/gl.h>
 
-//struct TextureDestroyer
-//{
-//    void operator()(SDL_Texture* texture){
-//        SDL_DestroyTexture(texture);
-//    }
-//};
+class GLTexture // exists so a sprite doesnt have a raw opengl texture handle (would require a long move constructor that copies a bunch of stuff)
+{ // This class does not handle texture creation, only deletion.
+    public:
+        GLTexture() : m_ID(0) {};
+        explicit GLTexture(GLuint tex) : m_ID(tex) {}; // https://www.geeksforgeeks.org/cpp/use-of-explicit-keyword-in-cpp/
 
-class GLTexture // exists so a sprite doesnt have a raw opengl texture handle (would require custom move constructor)
-{
-public:
-    GLTexture() : m_ID(0) {};
-    explicit GLTexture(GLuint tex) : m_ID(tex) {}; // https://www.geeksforgeeks.org/cpp/use-of-explicit-keyword-in-cpp/
+        // forbid copying to avoid multiple deletions of a texture (deletion happens in destructor)
+        GLTexture(const GLTexture& other) = delete;
+        GLTexture& operator=(const GLTexture& other) = delete;
 
-    // forbid copying (to avoid multiple deletions of a texture)
-    GLTexture(const GLTexture& other) = delete;
-    GLTexture& operator=(const GLTexture& other) = delete;
+        GLTexture(GLTexture&& other) noexcept : m_ID(other.m_ID) {
+            other.m_ID = 0;
+        }
+        GLTexture& operator=(GLTexture&& other) noexcept {
+            if (this != &other) {
+                Reset(); // Delete texture in case this hade one
+                m_ID = other.m_ID;
+                other.m_ID = 0;
+            }
+            return *this;
+        }
 
-    GLTexture(const GLTexture&& other) noexcept : m_ID(other.m_ID) {
-        other.m_ID = 0;
-    }
-    GLTexture& operator=(const GLTexture&& other) noexcept {
+        ~GLTexture()
+        {
+            Reset();
+        }
 
-    }
+        GLuint const GetID() { return m_ID; }
 
-private:
-    GLuint m_ID = 0;
-}
+    private:
+        void Reset() {
+            if (m_ID != 0) {
+                glDeleteTextures(1, &m_ID);
+                m_ID = 0;
+            }
+        }
+        GLuint m_ID = 0; // 0 means no texture
+};
 
 class Sprite
 {
@@ -49,27 +60,23 @@ class Sprite
             LoadTexture(textureFileName);
             SetNormal(normal);
         }
-//        // Move constructor that zeroes out m_Texture so it doesnt get deleted more than once
-//        Sprite(Sprite&& other) noexcept {
-//            m_Texture = other.m_Texture;
-//            // Copy evereything else
-//
-//            other.m_Texture = 0;
-//        }
+
+        // Prohibit copying (because GLTexture cannot be copied)
+        Sprite(const Sprite& other) = delete;
+        Sprite& operator=(const Sprite& other) = delete;
+
+        Sprite(Sprite&& other) = default;
+        Sprite& operator=(Sprite&& other) = default;
+
         virtual ~Sprite() {
-            if (m_Texture != 0)
-                glDeleteTextures(1, &m_Texture);
+//            if (m_Texture != 0)
+//                glDeleteTextures(1, &m_Texture); // GLTexture handles deletion
         }
 
-//        void Draw(SDL_Renderer* renderer);
-
-        GLuint m_Texture = 0; // 0 means no texture
+       // GLuint m_Texture = 0; // 0 means no texture
+        GLTexture m_Texture;
 
         void LoadTexture(const std::string& fileName); // Loads image (png) to GPU
-
-//        SDL_Texture* GetTexture() { return m_Texture.get(); }
-
-//        void UpdateVBO();
 
         float position_x = 0;
         float position_y = 0;
@@ -96,7 +103,11 @@ class Sprite
             glm::vec3 rotAxis = glm::cross(m_Normal, targetNormal);
             float dotProduct = glm::dot(targetNormal, m_Normal);
 
-            if (glm::length(rotAxis) < 1e-6f && dotProduct < 0.0f) { // Target and current normal are ~ anti parallell
+            if (glm::length(rotAxis) < 1e-6f) { // Target and current normal are ~ aligned
+                if (dotProduct > 0.0f) // Target and current normal are ~ parallell, don't do anything
+                    return;
+
+                // Target and current normal are ~ anti parallell
                 // WARNING: This code segment is AI generated and has not been tested
 
                 // Rotate around arbitrary axis 180 degrees, update normal and model matrix
@@ -129,7 +140,7 @@ class Sprite
         }
 
         static void InitializeOpenGL(); // Call once, this creates the VBO, VAO etc
-//        void UploadVerticesToVBO();
+
         static inline GLuint VBO; // shared vertex buffer object
         static inline GLuint VAO; // shared vertex array object
         static inline GLuint EBO; // shared element buffer object
@@ -144,7 +155,7 @@ class Sprite
                                                                         -0.5f, -0.5f, 0.0f,    0.0f, 0.0f, // bottom left
                                                                         0.5f, -0.5f, 0.0f,     1.0f, 0.0f, // bottom right
                                                                         0.5f, 0.5f, 0.0f,       1.0f, 1.0f}; // top right
-        static inlsine const std::array<GLuint, nrOfVertexIndices> vertexIndices = {0, 1, 2, 2, 3, 0};
+        static inline const std::array<GLuint, nrOfVertexIndices> vertexIndices = {0, 1, 2, 2, 3, 0};
         glm::vec3 m_Normal = {0.0f, 0.0f, 1.0f};
 
         static inline unsigned int nrOfSprites = 0;
@@ -157,7 +168,6 @@ class Sprite
     private:
         Transform m_Transform; // Describes how to transform this Sprite's vertices from local space to world space
         glm::mat4 modelMatrix = m_Transform.ToModelMatrix();
-//        std::unique_ptr<SDL_Texture, TextureDestroyer> m_Texture;
 };
 
 #endif // SPRITE_HPP
