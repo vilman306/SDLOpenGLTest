@@ -118,8 +118,8 @@ class Sprite
                     return;
 
                 // Target and current normal are ~ anti parallell
-                // WARNING: This code segment is AI generated and has not been tested
 
+                // WARNING: This code segment is AI generated and has not been tested
                 // Rotate around arbitrary axis 180 degrees, update normal and model matrix
                 glm::vec3 arbitraryAxis = (std::abs(m_Normal.x) < 0.9f) ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
                 glm::vec3 perpendicularAxis = glm::normalize(glm::cross(m_Normal, arbitraryAxis));

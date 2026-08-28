@@ -95,15 +95,7 @@ Scene::Scene()
 }
 
 
-std::string ShaderTypeToString(GLenum type)
-{
-    switch (type)
-    {
-        case GL_VERTEX_SHADER: return "GL_VERTEX_SHADER";
-        case GL_FRAGMENT_SHADER: return "GL_FRAGMENT_SHADER";
-        default: return "shader type not defined in function ShaderTypeToString(GLenum type)";
-    }
-}
+
 
 #include <fstream>
 #include <sstream>
@@ -118,6 +110,7 @@ std::string LoadShaderSource(const std::string& filePath)
     return buffer.str();
 }
 
+#include "GLUtils.hpp"
 GLuint CreateShader(GLenum shaderType, const std::string& sourcePath)
 {
     GLuint shader = glCreateShader(shaderType);
@@ -131,7 +124,7 @@ GLuint CreateShader(GLenum shaderType, const std::string& sourcePath)
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        throw std::runtime_error(std::string("Failed to compile shader of type ") + ShaderTypeToString(shaderType) + " :" + infoLog);
+        throw std::runtime_error(std::string("Failed to compile shader of type ") + GLUtils::GLTypeToString(shaderType) + " :" + infoLog);
     }
     return shader;
 }
