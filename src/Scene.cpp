@@ -53,16 +53,19 @@ Scene::Scene()
             throw std::runtime_error("Failed to initialize GLAD");
         std::cout << "GL " << GLAD_VERSION_MAJOR(version) << "." << GLAD_VERSION_MINOR(version) << std::endl;
 
-        GLint depthBits = 0;
-        glGetFramebufferAttachmentParameteriv(
-            GL_FRAMEBUFFER,
-            GL_DEPTH,
-            GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
-            &depthBits
-        );
-        std::cout << "Depth buffer bits: " << depthBits << std::endl;
+        glClearColor(0.25f, 0.25f, 0.4f, 1.0f); // Set background color
 
-        SetupOpenGL();
+        // Create Shader (program) for drawing Sprites
+        Shader spriteShader("default.vert", "default.frag");
+        m_Shaders.emplace(ShaderType::Sprite, std::move(spriteShader));
+
+        // TODO: Move to Material class:
+        // -----------------------
+        glEnable(GL_DEPTH_TEST); // Enable depth testing
+        glEnable(GL_BLEND); // Enable blending, so can display transparency
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Set source and destination factors, see https://learnopengl.com/Advanced-OpenGL/Blending
+        // -----------------------
+
         SetupSprites();
     }
 
@@ -71,110 +74,6 @@ Scene::Scene()
         std::cout << "ERROR: " << e.what() << std::endl;
         m_IsValid = false;
     }
-}
-
-
-
-
-#include <fstream>
-#include <sstream>
-std::string LoadShaderSource(const std::string& filePath)
-{
-    // see https://stackoverflow.com/questions/2141749/what-does-ifstreamrdbuf-actually-do
-    std::ifstream file(filePath);
-    if (file.fail())
-        throw std::runtime_error(std::string("Failed to open file at '") + filePath + "'.");
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-
-#include "GLUtils.hpp"
-GLuint CreateShader(GLenum shaderType, const std::string& sourcePath)
-{
-    GLuint shader = glCreateShader(shaderType);
-    std::string sourceString = LoadShaderSource(sourcePath);
-    const GLchar* source = sourceString.c_str();
-    glShaderSource(shader, 1, &source, nullptr);
-    glCompileShader(shader);
-    // Check for compilation errors
-    GLint success;
-    GLchar infoLog[512];
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        throw std::runtime_error(std::string("Failed to compile shader of type ") + GLUtils::GLTypeToString(shaderType) + " :" + infoLog);
-    }
-    return shader;
-}
-
-GLuint CreateShaderProgram(GLuint vertexShader, GLuint fragmentShader)
-{
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    // Check for linking errors
-    GLint success;
-    GLchar infoLog[512];
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
-        throw std::runtime_error(std::string("Failed to link shader program: ") + infoLog);
-    }
-    return shaderProgram;
-}
-
-
-glm::mat4 viewMatrix(1.0f);
-glm::mat4 projectionMatrix(1.0f);
-GLuint shaderProgram; // Shader program for drawing sprites
-GLint modelMatrixLocation;
-GLint viewMatrixLocation;
-GLint projectionMatrixLocation;
-GLint spriteTextureLocation;
-
-#include <SDL3/SDL_filesystem.h>
-#include <glm/gtc/type_ptr.hpp>
-void SetupOpenGL()
-{
-    glClearColor(0.25f, 0.25f, 0.4f, 1.0f); // Set background color
-
-    // Create shaders
-    GLuint vertexShader = CreateShader(GL_VERTEX_SHADER, std::string(SDL_GetBasePath()) + "../../src/default.vert");
-    GLuint fragmentShader = CreateShader(GL_FRAGMENT_SHADER, std::string(SDL_GetBasePath()) + "../../src/default.frag");
-
-    // Create and activate shader program
-    shaderProgram = CreateShaderProgram(vertexShader, fragmentShader);
-    glUseProgram(shaderProgram);
-
-    // Delete shaders now that they're linked in the shader program
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    // Matrices: create, get their uniform locations
-    if ((viewMatrixLocation = glGetUniformLocation(shaderProgram, "view")) == -1) // Get location
-        throw std::runtime_error("Failed to get view matrix location in shader program.");
-
-    if ((projectionMatrixLocation = glGetUniformLocation(shaderProgram, "projection")) == -1)
-        throw std::runtime_error("Failed to get projection matrix location in shader program.");
-
-    if ((modelMatrixLocation = glGetUniformLocation(shaderProgram, "model")) == -1)
-        throw std::runtime_error("Failed to get model matrix location in shader program.");
-
-
-    // Get sprite texture uniform location
-    if ((spriteTextureLocation = glGetUniformLocation(shaderProgram, "spriteTexture")) == -1)
-        throw std::runtime_error("Failed to get sprite texture location in shader program.");
-
-    glUniform1i(spriteTextureLocation, 0); // Set which sampler unit the uniform (sampler2D) belongs to (0 = GL_TEXTURE0)
-
-
-    glEnable(GL_DEPTH_TEST); // Enable depth testing
-
-
-    glEnable(GL_BLEND); // Enable blending, so can display transparency
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Set source and destination factors, see https://learnopengl.com/Advanced-OpenGL/Blending
 }
 
 void Scene::CreateBox(const std::string& texturePath, glm::vec3 centerPosition)
@@ -195,19 +94,17 @@ void Scene::CreateBox(const std::string& texturePath, glm::vec3 centerPosition)
     front.SetPosition(centerPosition + glm::vec3(0.0f, 0.0f, 0.5f * height));
     std::array<Sprite, 6> box = {std::move(back), std::move(bottom), std::move(top), std::move(left), std::move(right), std::move(front)};
     for (Sprite& boxSprite : box) {
-        m_Sprites.push_back(std::make_unique<Sprite>(std::move(boxSprite)));
+        m_Sprites.push_back(std::move(boxSprite));
     }
 }
 
 void Scene::SetupSprites()
 {
-//    Sprite::InitializeOpenGL();
-
     CreateBox("alphatest.png", glm::vec3(0.0f, 0.0f, -50.0f));
     CreateBox("cubeside.png", glm::vec3(-50.0f, 0.0f, -50.0f));
     CreateBox("default.png", glm::vec3(50.0f, 0.0f, -50.0f));
     Sprite ground("ground.png", glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, -50.0f, 0.0f), glm::vec3(40.0f, 40.0f, 1.0f));
-    m_Sprites.push_back(std::make_unique<Sprite>(std::move(ground)));
+    m_Sprites.push_back(std::move(ground));
 //    CreateBox("lightsource.png", glm::vec3(0.0f, 30.0f, 25.0f));
 
 
@@ -215,22 +112,24 @@ void Scene::SetupSprites()
 
 #include <SDL3/SDL_time.h>
 #include <algorithm>
+#include <glm/gtc/type_ptr.hpp>
 void Scene::DrawSprites(Camera& camera)
 {
     // Begin drawing sprites
-    glUseProgram(shaderProgram);
+    Shader* shader = &m_Shaders.at(ShaderType::Sprite);
+    shader->Use();
     glBindVertexArray(Sprite::GetMesh().VAO);
 
     glActiveTexture(GL_TEXTURE0); // Set which texture unit to bind textures to
 
     // Send camera matrices to shader program's uniforms
-    glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix())); // View matrix
-    glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(camera.GetProjectionMatrix())); // Perspective matrix
+    shader->SetUniform<glm::mat4>("view", camera.GetViewMatrix());
+    shader->SetUniform<glm::mat4>("projection", camera.GetProjectionMatrix());
 
     // Sort sprites based on distance (needed for drawing transparent objects correclty: https://learnopengl.com/Advanced-OpenGL/Blending)
     std::vector<Sprite*> spritesSortedByDistance;
-    for (std::unique_ptr<Sprite>& sprite: m_Sprites)
-        spritesSortedByDistance.push_back(sprite.get());
+    for (Sprite& sprite : m_Sprites)
+        spritesSortedByDistance.push_back(&sprite);
 
     std::sort( spritesSortedByDistance.begin(), spritesSortedByDistance.end(),
             [&camera](const Sprite* a, const Sprite* b) {
@@ -240,7 +139,7 @@ void Scene::DrawSprites(Camera& camera)
             } );
 
     for (Sprite* sprite : spritesSortedByDistance) {
-        glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(sprite->GetModelMatrix())); // Send model matrix to vertex shader (as uniform)
+        shader->SetUniform<glm::mat4>("model", sprite->GetModelMatrix());
         glBindTexture(GL_TEXTURE_2D, sprite->m_Texture.GetID());
         glDrawElements(GL_TRIANGLES, Sprite::GetMesh().nrOfVertexIndices, GL_UNSIGNED_INT, 0);
     }
@@ -278,8 +177,8 @@ void Scene::ProcessInputEvent(SDL_Event* event)
 
 Scene::~Scene()
 {
-//    glDeleteVertexArrays(1, &Sprite::VAO);
-//    glDeleteBuffers(1, &Sprite::VBO);
+    // This deletes the Sprite class's static Mesh's buffers and VAO.
+    // Must be done here and not later, because "OpenGL closes" after Scene's destruction (Scene owns window) which
+    // makes calling glDelete...() crash the program.
     Sprite::GetMesh().Reset();
-    glDeleteProgram(shaderProgram);
 }

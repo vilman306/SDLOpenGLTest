@@ -43,15 +43,10 @@ class Scene
 
     private:
         std::unique_ptr<SDL_Window, WindowDeleter> m_Window;
-//        std::unique_ptr<SDL_Renderer, RendererDeleter> m_Renderer;
         std::unique_ptr<SDL_GLContextState, GLContextDeleter> m_GLContext; // SDL_GLContextState == std::remove_pointer_t<SDL_GLContext>
         bool m_IsValid = true;
         std::unordered_map<ShaderType, Shader> m_Shaders;
-//
-//        Sprite sprite1;
-//        Sprite sprite2;
-//        Sprite sprite3;
-        std::vector<std::unique_ptr<Sprite>> m_Sprites;
+        std::vector<Sprite> m_Sprites;
         void CreateBox(const std::string& texturePath, glm::vec3 centerPosition);
         void SetupSprites();
         void DrawSprites(Camera& camera);
