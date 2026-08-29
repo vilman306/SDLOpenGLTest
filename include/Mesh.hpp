@@ -161,7 +161,7 @@ class Mesh
         }
         ~Mesh()
         {
-            //Reset(); // WARNING: SHOULD PROBABLY UNCOMMENT THIS (but then it will be called after opengl has closed because Sprite has a static Mesh)
+            //Reset(); // Uncommented because it will be called after opengl has closed, because Sprite has a static Mesh
         }
 
         // Forbid copying (to avoid multiple deletions of buffers)
@@ -187,7 +187,7 @@ class Mesh
                 EBO = other.EBO;
                 nrOfVertexIndices = other.nrOfVertexIndices;
                 nrOfVertices = other.nrOfVertices;
-                other.VBO = other.VAO = other.EBO = 0; // To prevent deletioin of buffers
+                other.VBO = other.VAO = other.EBO = 0; // To prevent deletioin of buffers (NOT RELEVANT NOW THAT WE DONT RESET IN DESTRUCTOR?)
             }
             return *this;
         };

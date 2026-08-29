@@ -11,32 +11,10 @@
 #include "Sprite.hpp"
 
 void SetupOpenGL(); // definition further down
-void SetupSprites();
 
 Scene::Scene()
 {
-//    SDL_Window* window = nullptr;
-//    SDL_Renderer* renderer = nullptr;
-//    try {
-//        if (!SDL_Init(SDL_INIT_VIDEO))
-//            throw std::runtime_error("Failure on SDL_Init: " + std::string(SDL_GetError()));
-//        if (!SDL_CreateWindowAndRenderer(Config::WindowTitle, Config::WindowWidth, Config::WindowHeight, SDL_WINDOW_RESIZABLE, &window, &renderer))
-//            throw std::runtime_error("Failure on SDL_CreateWindowAndRenderer: " + std::string(SDL_GetError()));
-//        if (!SDL_SetRenderLogicalPresentation(renderer, Config::WindowWidth, Config::WindowHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX))
-//            throw std::runtime_error("Failure on SDL_SetRenderLogicalPresentation: " + std::string(SDL_GetError()));
-//    }
-//
-//    catch (const std::exception& e)
-//    {
-//        std::cout << "ERROR: " << e.what() << std::endl;
-//        m_IsValid = false;
-//    }
-//
-//    m_Window.reset(window);
-//    m_Renderer.reset(renderer);
-//    sprite.LoadTexture("default.png", m_Renderer.get());
     SDL_Window* window = nullptr;
-//    SDL_Renderer* renderer = nullptr;
 
     try {
         if (!SDL_Init(SDL_INIT_VIDEO))
@@ -62,6 +40,9 @@ Scene::Scene()
 
         if (!SDL_SetWindowRelativeMouseMode(window, true))
             throw std::runtime_error("Failure on SDL_SetWindowRelativeMouseMode: " + std::string(SDL_GetError()));
+
+        if (!SDL_GL_SetSwapInterval(-1) && !SDL_GL_SetSwapInterval(1)) // Try turning on adaptive vsync, otherwise turn on normal vsync
+            throw std::runtime_error(SDL_GetError());
 
         // window and glContext OK, store/own them.
         m_Window.reset(window);

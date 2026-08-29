@@ -6,6 +6,7 @@
 #include <memory>
 #include "Sprite.hpp"
 #include "Camera.hpp"
+#include "Shader.hpp"
 
 struct WindowDeleter
 {
@@ -45,6 +46,7 @@ class Scene
 //        std::unique_ptr<SDL_Renderer, RendererDeleter> m_Renderer;
         std::unique_ptr<SDL_GLContextState, GLContextDeleter> m_GLContext; // SDL_GLContextState == std::remove_pointer_t<SDL_GLContext>
         bool m_IsValid = true;
+        std::unordered_map<ShaderType, Shader> m_Shaders;
 //
 //        Sprite sprite1;
 //        Sprite sprite2;
